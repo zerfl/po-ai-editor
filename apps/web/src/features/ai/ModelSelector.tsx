@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getModels } from '@/api/client';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Model {
   id: string;
@@ -25,21 +33,21 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return <div className="text-sm text-muted-foreground">Loading models...</div>;
-  }
-
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full border rounded px-3 py-2 text-sm"
-    >
-      {models.map((model) => (
-        <option key={model.id} value={model.id}>
-          {model.label}
-        </option>
-      ))}
-    </select>
+    <div>
+      <Label className="text-[11px]">Model</Label>
+      <Select value={value} onValueChange={onChange} disabled={loading}>
+        <SelectTrigger className="mt-1 h-8 text-xs">
+          <SelectValue placeholder={loading ? 'Loading...' : 'Select model'} />
+        </SelectTrigger>
+        <SelectContent>
+          {models.map((model) => (
+            <SelectItem key={model.id} value={model.id} className="text-xs">
+              {model.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

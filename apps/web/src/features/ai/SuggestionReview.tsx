@@ -1,5 +1,8 @@
-import type { TranslationSuggestion } from '@po-ai-editor/shared';
-import type { PoEntry } from '@po-ai-editor/shared';
+import type { TranslationSuggestion, PoEntry } from '@po-ai-editor/shared';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Check, X, AlertTriangle } from 'lucide-react';
 
 interface SuggestionReviewProps {
   suggestions: TranslationSuggestion[];
@@ -8,60 +11,77 @@ interface SuggestionReviewProps {
   onDismiss: () => void;
 }
 
-export function SuggestionReview({ suggestions, entries, onApply, onDismiss }: SuggestionReviewProps) {
+export function SuggestionReview({
+  suggestions,
+  entries,
+  onApply,
+  onDismiss,
+}: SuggestionReviewProps) {
+  const reviewCount = suggestions.filter((s) => s.needsReview).length;
+
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <div className="bg-muted/50 px-4 py-2 flex items-center justify-between">
-        <h3 className="text-sm font-medium">
-          AI Suggestions ({suggestions.length})
-        </h3>
-        <div className="flex gap-2">
-          <button
+    <div className="rounded-lg border">
+      <div className="flex items-center justify-between border-b px-3 py-2">
+        <div className="flex items-center gap-2">
+          <h3 className="text-xs font-medium">
+            Suggestions ({suggestions.length})
+          </h3>
+          {reviewCount > 0 && (
+            <Badge
+              variant="secondary"
+              className="h-4 text-[10px] border-amber-300 bg-amber-50 text-amber-700"
+            >
+              <AlertTriangle className="mr-0.5 size-2.5" />
+              {reviewCount} need review
+            </Badge>
+          )}
+        </div>
+        <div className="flex gap-1">
+          <Button
+            size="xs"
             onClick={onApply}
-            className="text-sm bg-primary text-primary-foreground px-3 py-1 rounded hover:bg-primary/90"
           >
+            <Check />
             Apply All
-          </button>
-          <button
-            onClick={onDismiss}
-            className="text-sm border px-3 py-1 rounded hover:bg-muted"
-          >
+          </Button>
+          <Button variant="ghost" size="xs" onClick={onDismiss}>
+            <X />
             Dismiss
-          </button>
+          </Button>
         </div>
       </div>
-      <div className="divide-y max-h-[40vh] overflow-y-auto">
-        {suggestions.map((suggestion) => {
-          const entry = entries.find((e) => e.id === suggestion.id);
-          if (!entry) return null;
+      <ScrollArea className="max-h-[300px]">
+        <div className="divide-y">
+          {suggestions.map((suggestion) => {
+            const entry = entries.find((e) => e.id === suggestion.id);
+            if (!entry) return null;
 
-          return (
-            <div key={suggestion.id} className="px-4 py-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-mono">{entry.msgid}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {entry.msgstr && (
-                      <span className="line-through mr-2">{entry.msgstr}</span>
-                    )}
-                    <span className="text-foreground">{suggestion.msgstr}</span>
-                  </p>
+            return (
+              <div key={suggestion.id} className="px-3 py-2">
+                <p className="text-foreground truncate font-mono text-[11px]">
+                  {entry.msgid}
+                </p>
+                <div className="mt-1 text-xs">
+                  {entry.msgstr && (
+                    <span className="text-muted-foreground line-through">
+                      {entry.msgstr}
+                    </span>
+                  )}
+                  {entry.msgstr && (
+                    <span className="text-muted-foreground mx-1.5">→</span>
+                  )}
+                  <span className="text-foreground">{suggestion.msgstr}</span>
                 </div>
-                {suggestion.needsReview && (
-                  <span className="text-xs bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
-                    needs review
-                  </span>
+                {suggestion.notes.length > 0 && (
+                  <p className="text-muted-foreground mt-0.5 text-[10px]">
+                    {suggestion.notes.join(', ')}
+                  </p>
                 )}
               </div>
-              {suggestion.notes.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {suggestion.notes.join(', ')}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

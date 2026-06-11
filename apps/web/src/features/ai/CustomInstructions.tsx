@@ -1,17 +1,23 @@
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
 interface CustomInstructionsProps {
   value: string;
   onChange: (value: string) => void;
 }
 
-export function CustomInstructions({ value, onChange }: CustomInstructionsProps) {
+export function CustomInstructions({
+  value,
+  onChange,
+}: CustomInstructionsProps) {
   return (
     <div>
-      <label className="text-sm font-medium">Custom Instructions</label>
-      <textarea
+      <Label className="text-[11px]">Custom Instructions</Label>
+      <Textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="e.g., Use formal German, preserve brand names..."
-        className="w-full mt-1 border rounded px-3 py-2 text-sm min-h-[80px]"
+        className="mt-1 text-xs min-h-[60px] resize-y"
       />
     </div>
   );

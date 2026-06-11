@@ -1,8 +1,18 @@
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { Formality, Tone } from '@po-ai-editor/shared';
+
 interface StyleSelectorProps {
-  formality: string;
-  tone: string;
-  onFormalityChange: (formality: string) => void;
-  onToneChange: (tone: string) => void;
+  formality: Formality;
+  tone: Tone;
+  onFormalityChange: (formality: Formality) => void;
+  onToneChange: (tone: Tone) => void;
 }
 
 export function StyleSelector({
@@ -12,31 +22,47 @@ export function StyleSelector({
   onToneChange,
 }: StyleSelectorProps) {
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-2 gap-2">
       <div>
-        <label className="text-sm font-medium">Formality</label>
-        <select
-          value={formality}
-          onChange={(e) => onFormalityChange(e.target.value)}
-          className="w-full mt-1 border rounded px-3 py-2 text-sm"
-        >
-          <option value="auto">Auto</option>
-          <option value="formal">Formal</option>
-          <option value="informal">Informal</option>
-        </select>
+        <Label className="text-[11px]">Formality</Label>
+        <Select value={formality} onValueChange={onFormalityChange}>
+          <SelectTrigger className="mt-1 h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="auto" className="text-xs">
+              Auto
+            </SelectItem>
+            <SelectItem value="formal" className="text-xs">
+              Formal
+            </SelectItem>
+            <SelectItem value="informal" className="text-xs">
+              Informal
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div>
-        <label className="text-sm font-medium">Tone</label>
-        <select
-          value={tone}
-          onChange={(e) => onToneChange(e.target.value)}
-          className="w-full mt-1 border rounded px-3 py-2 text-sm"
-        >
-          <option value="auto">Auto</option>
-          <option value="friendly">Friendly</option>
-          <option value="technical">Technical</option>
-          <option value="neutral">Neutral</option>
-        </select>
+        <Label className="text-[11px]">Tone</Label>
+        <Select value={tone} onValueChange={onToneChange}>
+          <SelectTrigger className="mt-1 h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="auto" className="text-xs">
+              Auto
+            </SelectItem>
+            <SelectItem value="friendly" className="text-xs">
+              Friendly
+            </SelectItem>
+            <SelectItem value="technical" className="text-xs">
+              Technical
+            </SelectItem>
+            <SelectItem value="neutral" className="text-xs">
+              Neutral
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
