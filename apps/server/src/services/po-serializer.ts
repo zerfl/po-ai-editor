@@ -1,0 +1,105 @@
+import gettextParser from 'gettext-parser';
+import type { PoEntry, PoMetadata } from '@po-ai-editor/shared';
+
+function escapeForPo(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\t/g, '\\t');
+}
+
+export function serializePo(entries: PoEntry[], metadata: PoMetadata): string {
+  const lines: string[] = [];
+
+  lines.push('# PO AI Editor Export');
+  lines.push(`# Language: ${metadata.language}`);
+  lines.push(`# Plural-Forms: ${metadata.pluralForms}`);
+  lines.push('');
+
+  for (const entry of entries) {
+    if (entry.isObsolete) {
+      lines.push('#~ ' + escapeForPo(entry.msgid));
+      continue;
+    }
+
+    if (entry.comments.translator) {
+      lines.push(`# ${entry.comments.translator}`);
+    }
+    if (entry.comments.extracted) {
+      lines.push(`#. ${entry.comments.extracted}`);
+    }
+    if (entry.comments.reference) {
+      lines.push(`#: ${entry.comments.reference}`);
+    }
+    if (entry.comments.flag) {
+      lines.push(`#, ${entry.comments.flag}`);
+    }
+
+    if (entry.msgctxt) {
+      lines.push(`msgctxt "${escapeForPo(entry.msgctxt)}"`);
+    }
+
+    lines.push(`msgid "${escapeForPo(entry.msgid)}"`);
+
+    if (entry.msgidPlural) {
+      lines.push(`msgid_plural "${escapeForPo(entry.msgidPlural)}"`);
+      entry.msgstrPlural.forEach((msgstr, i) => {
+        lines.push(`msgstr[${i}] "${escapeForPo(msgstr)}"`);
+      });
+    } else {
+      lines.push(`msgstr "${escapeForPo(entry.msgstr)}"`);
+    }
+
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
+export function serializeMo(entries: PoEntry[], metadata: PoMetadata): Buffer {
+  const translations: Record<string, Record<string, { msgstr: string[] }>> = {
+    '': {},
+  };
+
+  translations[''][''] = {
+    msgstr: [buildHeaderString(metadata)],
+  };
+
+  for (const entry of entries) {
+    if (entry.isObsolete) continue;
+
+    const context = entry.msgctxt || '';
+    if (!translations[context]) {
+      translations[context] = {};
+    }
+
+    if (entry.msgidPlural) {
+      translations[context][entry.msgid] = {
+        msgstr: entry.msgstrPlural,
+      };
+    } else {
+      translations[context][entry.msgid] = {
+        msgstr: [entry.msgstr],
+      };
+    }
+  }
+
+  const moData = { translations };
+  return gettextParser.mo.compile(moData);
+}
+
+function buildHeaderString(metadata: PoMetadata): string {
+  return [
+    `Project-Id-Version: ${metadata.projectVersion}`,
+    `Report-Msgid-Bugs-To: ${metadata.reportMsgidBugsTo}`,
+    `POT-Creation-Date: ${metadata.potCreationDate}`,
+    `PO-Revision-Date: ${metadata.poRevisionDate}`,
+    `Last-Translator: ${metadata.lastTranslator}`,
+    `Language-Team: ${metadata.languageTeam}`,
+    `Language: ${metadata.language}`,
+    `Content-Type: ${metadata.contentType}`,
+    `Content-Transfer-Encoding: ${metadata.contentTransferEncoding}`,
+    `Plural-Forms: ${metadata.pluralForms}`,
+  ].join('\n');
+}
