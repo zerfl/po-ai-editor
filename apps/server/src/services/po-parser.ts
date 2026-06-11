@@ -15,37 +15,41 @@ export function parsePo(content: string, filename: string): PoFile {
   const parsed = gettextParser.po.parse(content, 'utf-8');
   const entries: PoEntry[] = [];
 
-  for (const [msgid, translation] of Object.entries(parsed.translations[''] ?? {})) {
-    const t = translation;
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive against missing gettext fields
-    const msgstr = t.msgstr?.[0] ?? '';
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive against missing gettext fields
-    const msgstrPlural = t.msgstr?.slice(1) ?? [];
-    const isTranslated = msgstr.length > 0 || msgstrPlural.some((s: string) => s.length > 0);
-    const flags =
-      t.comments?.flag
-        ?.split(',')
-        .map((f: string) => f.trim())
-        .filter(Boolean) ?? [];
-    const isFuzzy = flags.includes('fuzzy');
+  for (const [context, contextEntries] of Object.entries(parsed.translations)) {
+    for (const [msgid, translation] of Object.entries(contextEntries)) {
+      if (msgid === '' && context !== '') continue;
 
-    entries.push({
-      id: randomUUID(),
-      msgctxt: t.msgctxt ?? null,
-      msgid: unescapeString(msgid),
-      msgidPlural: t.msgid_plural ? unescapeString(t.msgid_plural) : null,
-      msgstr: unescapeString(msgstr),
-      msgstrPlural: msgstrPlural.map(unescapeString),
-      comments: {
-        translator: t.comments?.translator ?? undefined,
-        extracted: t.comments?.extracted ?? undefined,
-        reference: t.comments?.reference ?? undefined,
-        flag: t.comments?.flag ?? undefined,
-      },
-      isFuzzy,
-      isObsolete: false,
-      isTranslated,
-    });
+      const t = translation;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive against missing gettext fields
+      const msgstr = t.msgstr?.[0] ?? '';
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive against missing gettext fields
+      const msgstrPlural = t.msgstr?.slice(1) ?? [];
+      const isTranslated = msgstr.length > 0 || msgstrPlural.some((s: string) => s.length > 0);
+      const flags =
+        t.comments?.flag
+          ?.split(',')
+          .map((f: string) => f.trim())
+          .filter(Boolean) ?? [];
+      const isFuzzy = flags.includes('fuzzy');
+
+      entries.push({
+        id: randomUUID(),
+        msgctxt: context || null,
+        msgid: unescapeString(msgid),
+        msgidPlural: t.msgid_plural ? unescapeString(t.msgid_plural) : null,
+        msgstr: unescapeString(msgstr),
+        msgstrPlural: msgstrPlural.map(unescapeString),
+        comments: {
+          translator: t.comments?.translator ?? undefined,
+          extracted: t.comments?.extracted ?? undefined,
+          reference: t.comments?.reference ?? undefined,
+          flag: t.comments?.flag ?? undefined,
+        },
+        isFuzzy,
+        isObsolete: false,
+        isTranslated,
+      });
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- gettext-parser types are imprecise
@@ -57,6 +61,27 @@ export function parsePo(content: string, filename: string): PoFile {
       const key = line.slice(0, colonIdx).trim();
       const value = line.slice(colonIdx + 1).trim();
       headerMap[key] = value;
+    }
+  }
+
+  const knownHeaderKeys = new Set([
+    'Project-Id-Version',
+    'Report-Msgid-Bugs-To',
+    'POT-Creation-Date',
+    'PO-Revision-Date',
+    'Last-Translator',
+    'Language-Team',
+    'Language',
+    'Content-Type',
+    'Content-Transfer-Encoding',
+    'Plural-Forms',
+    'X-Generator',
+  ]);
+
+  const extraHeaders: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headerMap)) {
+    if (!knownHeaderKeys.has(key)) {
+      extraHeaders[key] = value;
     }
   }
 
@@ -72,6 +97,7 @@ export function parsePo(content: string, filename: string): PoFile {
     contentTransferEncoding: headerMap['Content-Transfer-Encoding'] ?? '8bit',
     pluralForms: headerMap['Plural-Forms'] ?? 'nplurals=2; plural=(n != 1);',
     xGenerator: headerMap['X-Generator'] || undefined,
+    extraHeaders: Object.keys(extraHeaders).length > 0 ? extraHeaders : undefined,
   };
 
   return { entries, metadata, filename };

@@ -37,6 +37,7 @@ export const PoMetadataSchema = z.object({
   contentTransferEncoding: z.string(),
   pluralForms: z.string(),
   xGenerator: z.string().optional(),
+  extraHeaders: z.record(z.string()).optional(),
 });
 
 export const ParseResponseSchema = z.object({

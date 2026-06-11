@@ -30,6 +30,7 @@ export interface PoMetadata {
   contentTransferEncoding: string;
   pluralForms: string;
   xGenerator?: string;
+  extraHeaders?: Record<string, string>;
 }
 
 export interface PoFile {
