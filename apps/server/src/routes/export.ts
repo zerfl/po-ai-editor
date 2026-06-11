@@ -45,7 +45,7 @@ exportRoute.post('/export/mo', async (c) => {
 
     c.header('Content-Type', 'application/x-mobipocket-ebook');
     c.header('Content-Disposition', 'attachment; filename="translation.mo"');
-    return c.body(moContent);
+    return c.body(Uint8Array.from(moContent));
   } catch (error) {
     console.error('Export MO error:', error);
     return c.json({ error: 'Export failed' }, 500);
