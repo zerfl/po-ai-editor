@@ -18,6 +18,22 @@ msgid "Fuzzy entry"
 msgstr "Unscharfer Eintrag"
 `;
 
+const samplePoObsolete = `# Test PO file with obsolete entries
+msgid ""
+msgstr ""
+"Project-Id-Version: test\\n"
+"Language: de\\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\\n"
+
+msgid "Active entry"
+msgstr "Aktiver Eintrag"
+
+#, fuzzy
+#~| msgid "Qualitrain enabled"
+#~ msgid "Qualitrain Einstellungen"
+#~ msgstr "Qualitrain/EGYM aktiviert"
+`;
+
 describe('po-parser', () => {
   it('should parse a PO file', () => {
     const result = parsePo(samplePo, 'test.po');
@@ -46,5 +62,14 @@ describe('po-parser', () => {
     const fuzzy = result.entries.find((e) => e.msgid === 'Fuzzy entry');
     expect(fuzzy?.comments.extracted).toBe('This is a comment');
     expect(fuzzy?.comments.reference).toBe('src/main.ts:42');
+  });
+
+  it('should handle obsolete entries with previous context (#~|)', () => {
+    const result = parsePo(samplePoObsolete, 'test.po');
+    expect(result.filename).toBe('test.po');
+    expect(result.metadata.language).toBe('de');
+    const active = result.entries.find((e) => e.msgid === 'Active entry');
+    expect(active).toBeDefined();
+    expect(active?.msgstr).toBe('Aktiver Eintrag');
   });
 });

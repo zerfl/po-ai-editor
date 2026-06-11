@@ -19,6 +19,7 @@ function unescapeString(str: string): string {
 }
 
 export function parsePo(content: string, filename: string): PoFile {
+  content = content.replace(/^#~\|.*$/gm, '');
   const parsed = gettextParser.po.parse(content, 'utf-8');
   const entries: PoEntry[] = [];
 
