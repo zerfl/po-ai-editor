@@ -3,11 +3,13 @@
   "tasks": {
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["OPENAI_API_KEY", "OPENAI_DEFAULT_MODEL", "OPENAI_ALLOWED_MODELS", "PORT"]
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      "env": ["OPENAI_API_KEY", "OPENAI_DEFAULT_MODEL", "OPENAI_ALLOWED_MODELS", "PORT"]
     },
     "test": {
       "dependsOn": ["^build"]
