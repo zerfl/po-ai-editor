@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Toaster } from 'sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { PoProvider, usePoStore } from './features/po/usePoStore';
 import { PoLoader } from './features/po/PoLoader';
 import { EntryList } from './features/po/EntryList';
@@ -8,90 +9,142 @@ import { TranslatePanel } from './features/ai/TranslatePanel';
 import { GlossaryEditor } from './features/glossary/GlossaryEditor';
 import { ExportButtons } from './features/export/ExportButtons';
 import { PotLoader } from './features/pot-merge/PotLoader';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@/components/ui/resizable';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 import type { Glossary } from '@po-ai-editor/shared';
 
 function AppContent() {
-  const { state } = usePoStore();
+  const { state, dispatch } = usePoStore();
   const [glossary, setGlossary] = useState<Glossary>([]);
-  const [sidebarTab, setSidebarTab] = useState<'translate' | 'glossary' | 'export'>('translate');
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b px-6 py-3 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">PO AI Editor</h1>
+    <div className="flex h-screen flex-col overflow-hidden">
+      {/* Header */}
+      <header className="flex h-10 shrink-0 items-center justify-between border-b px-3">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xs font-semibold tracking-tight">
+            PO AI Editor
+          </h1>
+          {state.file && (
+            <>
+              <span className="text-muted-foreground text-xs">/</span>
+              <span className="text-muted-foreground text-xs">
+                {state.file.filename}
+              </span>
+              <Badge variant="secondary" className="h-5 text-[10px]">
+                {state.file.entries.length}
+              </Badge>
+            </>
+          )}
+        </div>
         {state.file && (
-          <span className="text-sm text-muted-foreground">
-            {state.file.filename} — {state.file.entries.length} entries
-          </span>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => dispatch({ type: 'RESET_FILE' })}
+            title="Close file"
+          >
+            <X />
+          </Button>
         )}
       </header>
-      <main className="p-6">
-        {!state.file ? (
-          <div className="max-w-xl mx-auto mt-12 relative">
-            <PoLoader />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-2">
-              <EntryList />
-            </div>
-            <div>
-              <EntryEditor />
-            </div>
-            <div className="space-y-4">
-              <div className="flex border-b">
-                <button
-                  onClick={() => setSidebarTab('translate')}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-                    sidebarTab === 'translate'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground'
-                  }`}
-                >
-                  Translate
-                </button>
-                <button
-                  onClick={() => setSidebarTab('glossary')}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-                    sidebarTab === 'glossary'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground'
-                  }`}
-                >
-                  Glossary
-                </button>
-                <button
-                  onClick={() => setSidebarTab('export')}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-                    sidebarTab === 'export'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground'
-                  }`}
-                >
-                  Export
-                </button>
+
+      {/* Main content */}
+      {!state.file ? (
+        <div className="flex flex-1 items-center justify-center">
+          <PoLoader />
+        </div>
+      ) : (
+        <ResizablePanelGroup
+          orientation="horizontal"
+          className="flex-1"
+          id="po-editor-layout"
+        >
+          {/* Entry List Panel */}
+          <ResizablePanel
+            defaultSize="32%"
+            minSize="20%"
+            maxSize="50%"
+            collapsible
+            collapsedSize="0%"
+          >
+            <EntryList />
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* Editor Panel */}
+          <ResizablePanel defaultSize="38%" minSize="25%">
+            <EntryEditor />
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* Sidebar Panel */}
+          <ResizablePanel
+            defaultSize="30%"
+            minSize="20%"
+            maxSize="45%"
+            collapsible
+            collapsedSize="0%"
+          >
+            <Tabs defaultValue="translate" className="flex h-full flex-col">
+              <div className="border-b px-3">
+                <TabsList variant="line" className="h-9">
+                  <TabsTrigger value="translate" className="text-xs">
+                    Translate
+                  </TabsTrigger>
+                  <TabsTrigger value="glossary" className="text-xs">
+                    Glossary
+                  </TabsTrigger>
+                  <TabsTrigger value="export" className="text-xs">
+                    Export
+                  </TabsTrigger>
+                </TabsList>
               </div>
-              {sidebarTab === 'translate' && <TranslatePanel glossary={glossary} />}
-              {sidebarTab === 'glossary' && <GlossaryEditor glossary={glossary} onChange={setGlossary} />}
-              {sidebarTab === 'export' && (
-                <div className="space-y-4">
+              <TabsContent
+                value="translate"
+                className="m-0 flex-1 overflow-auto"
+              >
+                <TranslatePanel glossary={glossary} />
+              </TabsContent>
+              <TabsContent
+                value="glossary"
+                className="m-0 flex-1 overflow-auto"
+              >
+                <GlossaryEditor glossary={glossary} onChange={setGlossary} />
+              </TabsContent>
+              <TabsContent
+                value="export"
+                className="m-0 flex-1 overflow-auto"
+              >
+                <div className="space-y-4 p-3">
                   <ExportButtons />
                   <PotLoader />
                 </div>
-              )}
-            </div>
-          </div>
-        )}
-      </main>
-      <Toaster />
+              </TabsContent>
+            </Tabs>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      )}
+      <Toaster position="bottom-right" />
     </div>
   );
 }
 
 export default function App() {
   return (
-    <PoProvider>
-      <AppContent />
-    </PoProvider>
+    <TooltipProvider delayDuration={300}>
+      <PoProvider>
+        <AppContent />
+      </PoProvider>
+    </TooltipProvider>
   );
 }
