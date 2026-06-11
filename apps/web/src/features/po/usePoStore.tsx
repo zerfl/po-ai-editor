@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, type ReactNode } from 'react';
+import { createContext, useContext, useReducer, useMemo, type ReactNode } from 'react';
 import type { PoEntry, PoFile } from '@po-ai-editor/shared';
 
 interface PoState {
@@ -147,9 +147,10 @@ function poReducer(state: PoState, action: PoAction): PoState {
         }
         return { ...newEntry, msgstr: '', isTranslated: false };
       });
-      const obsoleteEntries = state.file.entries
-        .filter((e) => !action.payload.entries.some((ne) => ne.msgid === e.msgid))
-        .map((e) => ({ ...e, isObsolete: true }));
+      const newMsgidSet = new Set(action.payload.entries.map((e) => e.msgid));
+      const obsoleteEntries = state.file.entries.flatMap((e) =>
+        newMsgidSet.has(e.msgid) ? [] : [{ ...e, isObsolete: true }],
+      );
 
       return {
         ...state,
@@ -167,34 +168,25 @@ function poReducer(state: PoState, action: PoAction): PoState {
 
 function getFilteredEntries(state: PoState): PoEntry[] {
   if (!state.file) return [];
-  let entries = state.file.entries;
+  const q = state.searchQuery ? state.searchQuery.toLowerCase() : '';
 
-  switch (state.filter) {
-    case 'translated':
-      entries = entries.filter((e) => e.isTranslated && !e.isFuzzy);
-      break;
-    case 'untranslated':
-      entries = entries.filter((e) => !e.isTranslated);
-      break;
-    case 'fuzzy':
-      entries = entries.filter((e) => e.isFuzzy);
-      break;
-    case 'obsolete':
-      entries = entries.filter((e) => e.isObsolete);
-      break;
-  }
+  return state.file.entries.filter((e) => {
+    const matchesStatus =
+      state.filter === 'all' ||
+      (state.filter === 'translated' && e.isTranslated && !e.isFuzzy) ||
+      (state.filter === 'untranslated' && !e.isTranslated) ||
+      (state.filter === 'fuzzy' && e.isFuzzy) ||
+      (state.filter === 'obsolete' && e.isObsolete);
 
-  if (state.searchQuery) {
-    const q = state.searchQuery.toLowerCase();
-    entries = entries.filter(
-      (e) =>
-        e.msgid.toLowerCase().includes(q) ||
-        e.msgstr.toLowerCase().includes(q) ||
-        (e.msgctxt && e.msgctxt.toLowerCase().includes(q)),
+    if (!matchesStatus) return false;
+    if (!q) return true;
+
+    return (
+      e.msgid.toLowerCase().includes(q) ||
+      e.msgstr.toLowerCase().includes(q) ||
+      (e.msgctxt !== null && e.msgctxt.toLowerCase().includes(q))
     );
-  }
-
-  return entries;
+  });
 }
 
 interface PoContextValue {
@@ -207,11 +199,18 @@ const PoContext = createContext<PoContextValue | null>(null);
 
 export function PoProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(poReducer, initialState);
-  const filteredEntries = getFilteredEntries(state);
-
-  return (
-    <PoContext.Provider value={{ state, dispatch, filteredEntries }}>{children}</PoContext.Provider>
+  const filteredEntries = useMemo(
+    () => getFilteredEntries(state),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only recompute on filter/search/file changes, not selectedEntryId
+    [state.file, state.filter, state.searchQuery],
   );
+
+  const value = useMemo(
+    () => ({ state, dispatch, filteredEntries }),
+    [state, dispatch, filteredEntries],
+  );
+
+  return <PoContext.Provider value={value}>{children}</PoContext.Provider>;
 }
 
 export function usePoStore() {

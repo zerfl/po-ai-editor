@@ -1,20 +1,29 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PoProvider, usePoStore } from './features/po/usePoStore';
 import { PoLoader } from './features/po/PoLoader';
 import { EntryList } from './features/po/EntryList';
 import { EntryEditor } from './features/po/EntryEditor';
-import { TranslatePanel } from './features/ai/TranslatePanel';
-import { GlossaryEditor } from './features/glossary/GlossaryEditor';
-import { ExportButtons } from './features/export/ExportButtons';
-import { PotLoader } from './features/pot-merge/PotLoader';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import type { Glossary } from '@po-ai-editor/shared';
+
+const TranslatePanel = lazy(() =>
+  import('./features/ai/TranslatePanel').then((m) => ({ default: m.TranslatePanel })),
+);
+const GlossaryEditor = lazy(() =>
+  import('./features/glossary/GlossaryEditor').then((m) => ({ default: m.GlossaryEditor })),
+);
+const ExportButtons = lazy(() =>
+  import('./features/export/ExportButtons').then((m) => ({ default: m.ExportButtons })),
+);
+const PotLoader = lazy(() =>
+  import('./features/pot-merge/PotLoader').then((m) => ({ default: m.PotLoader })),
+);
 
 function AppContent() {
   const { state, dispatch } = usePoStore();
@@ -103,19 +112,27 @@ function AppContent() {
                 </TabsList>
               </div>
               <TabsContent value="translate" className="m-0 flex-1 overflow-auto">
-                <TranslatePanel glossary={glossary} />
+                <Suspense>
+                  <TranslatePanel glossary={glossary} />
+                </Suspense>
               </TabsContent>
               <TabsContent value="glossary" className="m-0 flex-1 overflow-auto">
-                <GlossaryEditor glossary={glossary} onChange={setGlossary} />
+                <Suspense>
+                  <GlossaryEditor glossary={glossary} onChange={setGlossary} />
+                </Suspense>
               </TabsContent>
               <TabsContent value="export" className="m-0 flex-1 overflow-auto">
                 <div className="p-3">
-                  <ExportButtons />
+                  <Suspense>
+                    <ExportButtons />
+                  </Suspense>
                 </div>
               </TabsContent>
               <TabsContent value="update" className="m-0 flex-1 overflow-auto">
                 <div className="flex h-full items-center justify-center p-3">
-                  <PotLoader />
+                  <Suspense>
+                    <PotLoader />
+                  </Suspense>
                 </div>
               </TabsContent>
             </Tabs>

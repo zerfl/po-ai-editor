@@ -1,11 +1,19 @@
-import { usePoStore } from './usePoStore';
-import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useEffect, useMemo, useState } from 'react';
+import { usePoStore } from './usePoStore';
 
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { MessageSquare, FileCode, BookOpen, Keyboard, Check } from 'lucide-react';
+import { BookOpen, Check, FileCode, FileText, Keyboard, MessageSquare } from 'lucide-react';
+
+const NO_ENTRY_SELECTED = (
+  <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+    <Keyboard className="size-5" />
+    <p className="text-sm">Select an entry to edit</p>
+    <p className="text-[11px]">Use ↑↓ or j/k to navigate</p>
+  </div>
+);
 
 export function EntryEditor() {
   const { state, dispatch } = usePoStore();
@@ -13,7 +21,11 @@ export function EntryEditor() {
   const [pluralMsgstrs, setPluralMsgstrs] = useState<string[]>([]);
   const [saved, setSaved] = useState(true);
 
-  const entry = state.file?.entries.find((e) => e.id === state.selectedEntryId);
+  const entryMap = useMemo(
+    () => new Map(state.file?.entries.map((e) => [e.id, e]) ?? []),
+    [state.file?.entries],
+  );
+  const entry = state.selectedEntryId ? entryMap.get(state.selectedEntryId) : undefined;
 
   useEffect(() => {
     if (entry) {
@@ -25,13 +37,7 @@ export function EntryEditor() {
   }, [entry?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- only reset on entry ID change
 
   if (!entry) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
-        <Keyboard className="size-5" />
-        <p className="text-sm">Select an entry to edit</p>
-        <p className="text-[11px]">Use ↑↓ or j/k to navigate</p>
-      </div>
-    );
+    return NO_ENTRY_SELECTED;
   }
 
   const handleSave = () => {
@@ -140,7 +146,7 @@ export function EntryEditor() {
         )}
 
         {/* Comments */}
-        {(entry.comments.translator || entry.comments.extracted || entry.comments.reference) && (
+        {(entry.comments.translator || entry.comments.extracted) && (
           <>
             <Separator className="my-3" />
             <div className="mb-3 space-y-2">
@@ -149,20 +155,31 @@ export function EntryEditor() {
                 Comments
               </Label>
               {entry.comments.translator && (
-                <div className="rounded border border-blue-200 bg-blue-50 p-2 text-xs text-blue-800">
+                <div className="rounded border border-blue-200 bg-blue-50 p-2 text-xs text-blue-800 whitespace-pre-wrap">
                   <span className="font-medium">Translator:</span> {entry.comments.translator}
                 </div>
               )}
               {entry.comments.extracted && (
-                <div className="rounded border p-2 text-xs text-muted-foreground">
+                <div className="rounded border p-2 text-xs text-muted-foreground whitespace-pre-wrap">
                   {entry.comments.extracted}
                 </div>
               )}
-              {entry.comments.reference && (
-                <div className="font-mono text-[11px] text-muted-foreground">
-                  {entry.comments.reference}
-                </div>
-              )}
+            </div>
+          </>
+        )}
+
+        {/* References */}
+        {entry.comments.reference && (
+          <>
+            <Separator className="my-3" />
+            <div className="mb-3 space-y-2">
+              <Label className="text-muted-foreground text-[11px] flex items-center gap-1.5">
+                <FileText className="size-3" />
+                References
+              </Label>
+              <div className="font-mono text-[11px] text-muted-foreground whitespace-pre-wrap">
+                {entry.comments.reference}
+              </div>
             </div>
           </>
         )}

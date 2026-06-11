@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { usePoStore } from '../po/usePoStore';
 import { translate } from '@/api/client';
 import { ModelSelector } from './ModelSelector';
@@ -35,10 +35,19 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
   const [totalBatches, setTotalBatches] = useState(0);
   const [failedBatches, setFailedBatches] = useState(0);
 
-  const selectedEntries = filteredEntries.filter((e) => state.selectedEntryIds.has(e.id));
+  const selectedEntries = useMemo(
+    () => filteredEntries.filter((e) => state.selectedEntryIds.has(e.id)),
+    [filteredEntries, state.selectedEntryIds],
+  );
+
+  const selectedEntriesRef = useRef(selectedEntries);
+  useEffect(() => {
+    selectedEntriesRef.current = selectedEntries;
+  }, [selectedEntries]);
 
   const handleTranslate = useCallback(async () => {
-    if (selectedEntries.length === 0) {
+    const entries = selectedEntriesRef.current;
+    if (entries.length === 0) {
       toast.error('No entries selected');
       return;
     }
@@ -47,9 +56,9 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
     setSuggestions([]);
     setFailedBatches(0);
 
-    const batches: (typeof selectedEntries)[] = [];
-    for (let i = 0; i < selectedEntries.length; i += batchSize) {
-      batches.push(selectedEntries.slice(i, i + batchSize));
+    const batches: (typeof entries)[] = [];
+    for (let i = 0; i < entries.length; i += batchSize) {
+      batches.push(entries.slice(i, i + batchSize));
     }
 
     setTotalBatches(batches.length);
@@ -57,15 +66,15 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
 
     const allSuggestions: TranslationSuggestion[] = [];
 
+    const existingTranslations =
+      state.file?.entries
+        .filter((e) => e.isTranslated && !e.isFuzzy)
+        .slice(0, 10)
+        .map((e) => ({ msgid: e.msgid, msgstr: e.msgstr })) ?? [];
+
     for (let i = 0; i < batches.length; i++) {
       setCurrentBatch(i + 1);
       try {
-        const existingTranslations =
-          state.file?.entries
-            .filter((e) => e.isTranslated && !e.isFuzzy)
-            .slice(0, 10)
-            .map((e) => ({ msgid: e.msgid, msgstr: e.msgstr })) ?? [];
-
         const response = await translate({
           model,
           sourceLanguage: state.file?.metadata.language ?? 'English',
@@ -77,17 +86,21 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
             mode: 'style-sample',
             existingTranslations,
           },
-          entries: batches[i].map((e) => ({
-            id: e.id,
-            msgctxt: e.msgctxt,
-            msgid: e.msgid,
-            msgidPlural: e.msgidPlural,
-            comments: [e.comments.translator, e.comments.extracted, e.comments.reference].filter(
-              Boolean,
-            ) as string[],
-            references: e.comments.reference ? [e.comments.reference] : [],
-            flags: e.isFuzzy ? ['fuzzy'] : [],
-          })),
+          entries: batches[i].map((e) => {
+            const comments: string[] = [];
+            if (e.comments.translator) comments.push(e.comments.translator);
+            if (e.comments.extracted) comments.push(e.comments.extracted);
+            if (e.comments.reference) comments.push(e.comments.reference);
+            return {
+              id: e.id,
+              msgctxt: e.msgctxt,
+              msgid: e.msgid,
+              msgidPlural: e.msgidPlural,
+              comments,
+              references: e.comments.reference ? [e.comments.reference] : [],
+              flags: e.isFuzzy ? ['fuzzy'] : [],
+            };
+          }),
         });
 
         allSuggestions.push(...response.suggestions);
@@ -102,20 +115,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
     setSuggestions(allSuggestions);
     setIsTranslating(false);
     toast.success(`Got ${String(allSuggestions.length)} suggestions`);
-  }, [
-    selectedEntries,
-    model,
-    formality,
-    tone,
-    customInstructions,
-    glossary,
-    batchSize,
-    state.file,
-  ]);
-
-  const handleRetryFailed = useCallback(() => {
-    void handleTranslate();
-  }, [handleTranslate]);
+  }, [model, formality, tone, customInstructions, glossary, batchSize, state.file]);
 
   const handleApply = useCallback(() => {
     dispatch({
@@ -208,7 +208,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
             current={currentBatch}
             total={totalBatches}
             failed={failedBatches}
-            onRetryFailed={handleRetryFailed}
+            onRetryFailed={() => void handleTranslate()}
           />
         )}
 
@@ -221,7 +221,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
             <Button
               variant="ghost"
               size="xs"
-              onClick={handleRetryFailed}
+              onClick={() => void handleTranslate()}
               className="text-destructive"
             >
               <RotateCcw />

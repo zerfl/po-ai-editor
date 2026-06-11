@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { usePoStore } from '../po/usePoStore';
 import { parseFile } from '@/api/client';
 import { toast } from 'sonner';
@@ -8,20 +8,25 @@ export function PotLoader() {
   const { state, dispatch } = usePoStore();
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const fileRef = useRef(state.file);
+  useEffect(() => {
+    fileRef.current = state.file;
+  }, [state.file]);
 
   const handleFile = useCallback(
     async (file: File) => {
-      if (!state.file) return;
+      const currentFile = fileRef.current;
+      if (!currentFile) return;
       setIsLoading(true);
       try {
         const content = await file.text();
         const result = await parseFile(content, file.name);
 
-        const existingMsgids = new Set(state.file.entries.map((e) => e.msgid));
+        const existingMsgids = new Set(currentFile.entries.map((e) => e.msgid));
         const potMsgids = new Set(result.entries.map((e) => e.msgid));
 
         const added = result.entries.filter((e) => !existingMsgids.has(e.msgid)).length;
-        const removed = state.file.entries.filter((e) => !potMsgids.has(e.msgid)).length;
+        const removed = currentFile.entries.filter((e) => !potMsgids.has(e.msgid)).length;
 
         const parts: string[] = [];
         if (added > 0) parts.push(`${String(added)} new`);
@@ -39,7 +44,7 @@ export function PotLoader() {
         setIsLoading(false);
       }
     },
-    [state.file, dispatch],
+    [dispatch],
   );
 
   const handleDrop = useCallback(
