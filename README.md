@@ -70,6 +70,25 @@ pnpm start
 
 The server serves both the API and frontend static files on port 8787.
 
+### Docker
+
+Build and run with Docker Compose:
+
+```bash
+# Ensure apps/server/.env has your OPENAI_API_KEY set
+docker compose up --build -d
+```
+
+This starts two containers:
+- **app**: Hono server serving the API and frontend (internal only, port 8787)
+- **nginx**: Reverse proxy published on port 80 with gzip, caching, and security headers
+
+To stop:
+
+```bash
+docker compose down
+```
+
 ## Project Structure
 
 ```
