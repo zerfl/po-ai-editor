@@ -1,5 +1,9 @@
 const API_BASE = '/api';
 
+import type { PoFile } from '@po-ai-editor/shared';
+import type { TranslateRequest, TranslateResponse } from '@po-ai-editor/shared';
+import type { ExportRequest } from '@po-ai-editor/shared';
+
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -9,7 +13,7 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
     const error = await res.text();
     throw new Error(`API error ${res.status}: ${error}`);
   }
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
 export async function healthCheck(): Promise<{ ok: boolean }> {
@@ -20,21 +24,21 @@ export async function getModels(): Promise<{ defaultModel: string; models: Array
   return fetchJson('/models');
 }
 
-export async function parseFile(content: string, filename: string): Promise<any> {
+export async function parseFile(content: string, filename: string): Promise<PoFile> {
   return fetchJson('/parse', {
     method: 'POST',
     body: JSON.stringify({ content, filename }),
   });
 }
 
-export async function translate(request: any): Promise<any> {
+export async function translate(request: TranslateRequest): Promise<TranslateResponse> {
   return fetchJson('/translate', {
     method: 'POST',
     body: JSON.stringify(request),
   });
 }
 
-export async function exportPo(request: any): Promise<Blob> {
+export async function exportPo(request: ExportRequest): Promise<Blob> {
   const res = await fetch(`${API_BASE}/export/po`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -44,7 +48,7 @@ export async function exportPo(request: any): Promise<Blob> {
   return res.blob();
 }
 
-export async function exportMo(request: any): Promise<Blob> {
+export async function exportMo(request: ExportRequest): Promise<Blob> {
   const res = await fetch(`${API_BASE}/export/mo`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -1,4 +1,4 @@
-import gettextParser from 'gettext-parser';
+import gettextParser, { type GettextTranslation } from 'gettext-parser';
 import type { PoEntry, PoFile, PoMetadata } from '@po-ai-editor/shared';
 import { randomUUID } from 'crypto';
 
@@ -24,7 +24,7 @@ export function parsePo(content: string, filename: string): PoFile {
   const entries: PoEntry[] = [];
 
   for (const [msgid, translation] of Object.entries(parsed.translations[''] || {})) {
-    const t = translation as any;
+    const t = translation as GettextTranslation;
     const msgstr = t.msgstr?.[0] || '';
     const msgstrPlural = t.msgstr?.slice(1) || [];
     const isTranslated = msgstr.length > 0 || msgstrPlural.some((s: string) => s.length > 0);
