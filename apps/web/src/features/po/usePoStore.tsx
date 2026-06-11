@@ -79,8 +79,12 @@ function poReducer(state: PoState, action: PoAction): PoState {
           ...state.file,
           entries: state.file.entries.map((e) =>
             e.id === action.payload.id
-              ? { ...e, msgstr: action.payload.msgstr, isTranslated: action.payload.msgstr.length > 0 }
-              : e
+              ? {
+                  ...e,
+                  msgstr: action.payload.msgstr,
+                  isTranslated: action.payload.msgstr.length > 0,
+                }
+              : e,
           ),
         },
       };
@@ -143,9 +147,9 @@ function poReducer(state: PoState, action: PoAction): PoState {
         }
         return { ...newEntry, msgstr: '', isTranslated: false };
       });
-      const obsoleteEntries = state.file.entries.filter(
-        (e) => !action.payload.entries.some((ne) => ne.msgid === e.msgid)
-      ).map((e) => ({ ...e, isObsolete: true }));
+      const obsoleteEntries = state.file.entries
+        .filter((e) => !action.payload.entries.some((ne) => ne.msgid === e.msgid))
+        .map((e) => ({ ...e, isObsolete: true }));
 
       return {
         ...state,
@@ -186,7 +190,7 @@ function getFilteredEntries(state: PoState): PoEntry[] {
       (e) =>
         e.msgid.toLowerCase().includes(q) ||
         e.msgstr.toLowerCase().includes(q) ||
-        (e.msgctxt && e.msgctxt.toLowerCase().includes(q))
+        (e.msgctxt && e.msgctxt.toLowerCase().includes(q)),
     );
   }
 
@@ -206,9 +210,7 @@ export function PoProvider({ children }: { children: ReactNode }) {
   const filteredEntries = getFilteredEntries(state);
 
   return (
-    <PoContext.Provider value={{ state, dispatch, filteredEntries }}>
-      {children}
-    </PoContext.Provider>
+    <PoContext.Provider value={{ state, dispatch, filteredEntries }}>{children}</PoContext.Provider>
   );
 }
 

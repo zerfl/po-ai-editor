@@ -9,11 +9,7 @@ import { TranslatePanel } from './features/ai/TranslatePanel';
 import { GlossaryEditor } from './features/glossary/GlossaryEditor';
 import { ExportButtons } from './features/export/ExportButtons';
 import { PotLoader } from './features/pot-merge/PotLoader';
-import {
-  ResizablePanelGroup,
-  ResizablePanel,
-  ResizableHandle,
-} from '@/components/ui/resizable';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,15 +25,11 @@ function AppContent() {
       {/* Header */}
       <header className="flex h-10 shrink-0 items-center justify-between border-b px-3">
         <div className="flex items-center gap-2">
-          <h1 className="text-xs font-semibold tracking-tight">
-            PO AI Editor
-          </h1>
+          <h1 className="text-xs font-semibold tracking-tight">PO AI Editor</h1>
           {state.file && (
             <>
               <span className="text-muted-foreground text-xs">/</span>
-              <span className="text-muted-foreground text-xs">
-                {state.file.filename}
-              </span>
+              <span className="text-muted-foreground text-xs">{state.file.filename}</span>
               <Badge variant="secondary" className="h-5 text-[10px]">
                 {state.file.entries.length}
               </Badge>
@@ -48,7 +40,9 @@ function AppContent() {
           <Button
             variant="ghost"
             size="icon-xs"
-            onClick={() => dispatch({ type: 'RESET_FILE' })}
+            onClick={() => {
+              dispatch({ type: 'RESET_FILE' });
+            }}
             title="Close file"
           >
             <X />
@@ -62,11 +56,7 @@ function AppContent() {
           <PoLoader />
         </div>
       ) : (
-        <ResizablePanelGroup
-          orientation="horizontal"
-          className="flex-1"
-          id="po-editor-layout"
-        >
+        <ResizablePanelGroup orientation="horizontal" className="flex-1" id="po-editor-layout">
           {/* Entry List Panel */}
           <ResizablePanel
             defaultSize="32%"
@@ -109,22 +99,13 @@ function AppContent() {
                   </TabsTrigger>
                 </TabsList>
               </div>
-              <TabsContent
-                value="translate"
-                className="m-0 flex-1 overflow-auto"
-              >
+              <TabsContent value="translate" className="m-0 flex-1 overflow-auto">
                 <TranslatePanel glossary={glossary} />
               </TabsContent>
-              <TabsContent
-                value="glossary"
-                className="m-0 flex-1 overflow-auto"
-              >
+              <TabsContent value="glossary" className="m-0 flex-1 overflow-auto">
                 <GlossaryEditor glossary={glossary} onChange={setGlossary} />
               </TabsContent>
-              <TabsContent
-                value="export"
-                className="m-0 flex-1 overflow-auto"
-              >
+              <TabsContent value="export" className="m-0 flex-1 overflow-auto">
                 <div className="space-y-4 p-3">
                   <ExportButtons />
                   <PotLoader />

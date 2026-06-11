@@ -10,20 +10,22 @@ export function ExportButtons() {
 
   if (!state.file) return null;
 
+  const file = state.file;
+
   const handleExportPo = async () => {
     try {
       const blob = await exportPo({
-        entries: state.file!.entries,
-        metadata: state.file!.metadata,
+        entries: file.entries,
+        metadata: file.metadata,
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = state.file!.filename.replace(/\.(po|pot)$/, '.po');
+      a.download = file.filename.replace(/\.(po|pot)$/, '.po');
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Exported .po file');
-    } catch (error) {
+    } catch {
       toast.error('Export failed');
     }
   };
@@ -31,17 +33,17 @@ export function ExportButtons() {
   const handleExportMo = async () => {
     try {
       const blob = await exportMo({
-        entries: state.file!.entries,
-        metadata: state.file!.metadata,
+        entries: file.entries,
+        metadata: file.metadata,
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = state.file!.filename.replace(/\.(po|pot)$/, '.mo');
+      a.download = file.filename.replace(/\.(po|pot)$/, '.mo');
       a.click();
       URL.revokeObjectURL(url);
-      toast.success('Generated .mo file');
-    } catch (error) {
+      toast.success('Generated .mo binary');
+    } catch {
       toast.error('Export failed');
     }
   };
@@ -51,7 +53,7 @@ export function ExportButtons() {
       <Label className="text-[11px]">Export</Label>
       <div className="mt-2 flex gap-2">
         <Button
-          onClick={handleExportPo}
+          onClick={() => void handleExportPo()}
           variant="outline"
           size="sm"
           className="flex-1 h-8 text-xs"
@@ -60,7 +62,7 @@ export function ExportButtons() {
           .po file
         </Button>
         <Button
-          onClick={handleExportMo}
+          onClick={() => void handleExportMo()}
           variant="outline"
           size="sm"
           className="flex-1 h-8 text-xs"

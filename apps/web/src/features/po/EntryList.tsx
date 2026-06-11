@@ -12,11 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Search, CheckSquare, Square } from 'lucide-react';
 import type { PoEntry } from '@po-ai-editor/shared';
 
@@ -62,16 +58,13 @@ export function EntryList() {
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  const setItemRef = useCallback(
-    (id: string, el: HTMLDivElement | null) => {
-      if (el) {
-        itemRefs.current.set(id, el);
-      } else {
-        itemRefs.current.delete(id);
-      }
-    },
-    []
-  );
+  const setItemRef = useCallback((id: string, el: HTMLDivElement | null) => {
+    if (el) {
+      itemRefs.current.set(id, el);
+    } else {
+      itemRefs.current.delete(id);
+    }
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {
@@ -86,16 +79,11 @@ export function EntryList() {
 
       if (!state.selectedEntryId || filteredEntries.length === 0) return;
 
-      const currentIndex = filteredEntries.findIndex(
-        (entry) => entry.id === state.selectedEntryId
-      );
+      const currentIndex = filteredEntries.findIndex((entry) => entry.id === state.selectedEntryId);
 
       if (e.key === 'ArrowDown' || e.key === 'j') {
         e.preventDefault();
-        const nextIndex = Math.min(
-          currentIndex + 1,
-          filteredEntries.length - 1
-        );
+        const nextIndex = Math.min(currentIndex + 1, filteredEntries.length - 1);
         const nextEntry = filteredEntries[nextIndex];
         dispatch({ type: 'SELECT_ENTRY', payload: nextEntry.id });
         const el = itemRefs.current.get(nextEntry.id);
@@ -111,7 +99,9 @@ export function EntryList() {
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [state.selectedEntryId, filteredEntries, dispatch]);
 
   if (!state.file) return null;
@@ -122,9 +112,9 @@ export function EntryList() {
       <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
         <Select
           value={state.filter}
-          onValueChange={(value) =>
-            dispatch({ type: 'SET_FILTER', payload: value as FilterType })
-          }
+          onValueChange={(value) => {
+            dispatch({ type: 'SET_FILTER', payload: value as FilterType });
+          }}
         >
           <SelectTrigger className="h-7 w-[130px] text-xs">
             <SelectValue />
@@ -142,9 +132,9 @@ export function EntryList() {
           <Input
             placeholder="Search..."
             value={state.searchQuery}
-            onChange={(e) =>
-              dispatch({ type: 'SET_SEARCH', payload: e.target.value })
-            }
+            onChange={(e) => {
+              dispatch({ type: 'SET_SEARCH', payload: e.target.value });
+            }}
             className="h-7 pl-7 text-xs"
           />
         </div>
@@ -156,7 +146,9 @@ export function EntryList() {
           <Button
             variant="ghost"
             size="icon-xs"
-            onClick={() => dispatch({ type: 'SELECT_ALL' })}
+            onClick={() => {
+              dispatch({ type: 'SELECT_ALL' });
+            }}
             title="Select all"
           >
             <CheckSquare />
@@ -164,7 +156,9 @@ export function EntryList() {
           <Button
             variant="ghost"
             size="icon-xs"
-            onClick={() => dispatch({ type: 'DESELECT_ALL' })}
+            onClick={() => {
+              dispatch({ type: 'DESELECT_ALL' });
+            }}
             title="Deselect all"
           >
             <Square />
@@ -194,22 +188,26 @@ export function EntryList() {
             filteredEntries.map((entry) => (
               <div
                 key={entry.id}
-                ref={(el) => setItemRef(entry.id, el)}
+                ref={(el) => {
+                  setItemRef(entry.id, el);
+                }}
                 className={`flex cursor-pointer items-start gap-2.5 px-3 py-2 transition-colors hover:bg-muted/50 ${
                   state.selectedEntryId === entry.id
                     ? 'bg-muted/60 border-l-2 border-l-primary'
                     : 'border-l-2 border-l-transparent'
                 }`}
-                onClick={() =>
-                  dispatch({ type: 'SELECT_ENTRY', payload: entry.id })
-                }
+                onClick={() => {
+                  dispatch({ type: 'SELECT_ENTRY', payload: entry.id });
+                }}
               >
                 <Checkbox
                   checked={state.selectedEntryIds.has(entry.id)}
-                  onCheckedChange={() =>
-                    dispatch({ type: 'TOGGLE_ENTRY', payload: entry.id })
-                  }
-                  onClick={(e) => e.stopPropagation()}
+                  onCheckedChange={() => {
+                    dispatch({ type: 'TOGGLE_ENTRY', payload: entry.id });
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
                   className="mt-0.5"
                 />
                 <div className="min-w-0 flex-1">
@@ -227,19 +225,12 @@ export function EntryList() {
                         {entry.msgid}
                       </p>
                     </TooltipTrigger>
-                    <TooltipContent
-                      side="bottom"
-                      className="max-w-sm font-mono text-xs"
-                    >
+                    <TooltipContent side="bottom" className="max-w-sm font-mono text-xs">
                       {entry.msgid}
                     </TooltipContent>
                   </Tooltip>
                   <p className="text-muted-foreground truncate font-mono text-[12px] leading-snug">
-                    {entry.msgstr || (
-                      <em className="text-muted-foreground/50">
-                        No translation
-                      </em>
-                    )}
+                    {entry.msgstr || <em className="text-muted-foreground/50">No translation</em>}
                   </p>
                 </div>
               </div>

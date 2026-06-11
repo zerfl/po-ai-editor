@@ -7,7 +7,7 @@ export const translateRoute = new Hono();
 
 translateRoute.post('/translate', async (c) => {
   try {
-    const body = await c.req.json();
+    const body: unknown = await c.req.json();
     const result = TranslateRequestSchema.safeParse(body);
 
     if (!result.success) {
@@ -20,15 +20,13 @@ translateRoute.post('/translate', async (c) => {
 
     const response = await callTranslation(request.model, systemPrompt, userPrompt);
 
-    let parsed;
-    try {
-      parsed = JSON.parse(response.content);
-    } catch {
-      return c.json({ error: 'Failed to parse AI response' }, 500);
-    }
+    const parsed: unknown = JSON.parse(response.content);
 
     return c.json({
-      suggestions: parsed.suggestions || [],
+      suggestions:
+        typeof parsed === 'object' && parsed !== null && 'suggestions' in parsed
+          ? (parsed.suggestions ?? [])
+          : [],
       usage: response.usage,
     });
   } catch (error) {

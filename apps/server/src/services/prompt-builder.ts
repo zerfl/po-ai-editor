@@ -3,7 +3,9 @@ import type { TranslateRequest } from '@po-ai-editor/shared';
 export function buildSystemPrompt(request: TranslateRequest): string {
   const parts: string[] = [];
 
-  parts.push('You are a professional software translator specializing in gettext/PO file translations.');
+  parts.push(
+    'You are a professional software translator specializing in gettext/PO file translations.',
+  );
   parts.push('');
   parts.push(`Source language: ${request.sourceLanguage}`);
   parts.push(`Target language: ${request.targetLanguage}`);
@@ -17,12 +19,20 @@ export function buildSystemPrompt(request: TranslateRequest): string {
 
   parts.push('');
   parts.push('RULES:');
-  parts.push('1. Preserve all placeholders exactly as they appear (e.g., %s, %d, {name}, {{variable}}, %%).');
+  parts.push(
+    '1. Preserve all placeholders exactly as they appear (e.g., %s, %d, {name}, {{variable}}, %%).',
+  );
   parts.push('2. Preserve HTML tags and their attributes.');
   parts.push('3. Preserve line breaks (\\n) in the same positions.');
-  parts.push('4. For plural forms, provide appropriate translations for each plural form required by the target language.');
-  parts.push('5. Mark entries as needing review if: the translation is uncertain, placeholders are complex, or context is ambiguous.');
-  parts.push('6. Do NOT translate: URLs, file paths, variable names, command-line arguments, or proper nouns.');
+  parts.push(
+    '4. For plural forms, provide appropriate translations for each plural form required by the target language.',
+  );
+  parts.push(
+    '5. Mark entries as needing review if: the translation is uncertain, placeholders are complex, or context is ambiguous.',
+  );
+  parts.push(
+    '6. Do NOT translate: URLs, file paths, variable names, command-line arguments, or proper nouns.',
+  );
   parts.push('7. Return valid JSON matching the specified output schema.');
 
   if (request.glossary.length > 0) {
@@ -43,7 +53,9 @@ export function buildSystemPrompt(request: TranslateRequest): string {
   }
 
   parts.push('');
-  parts.push('OUTPUT FORMAT: Return a JSON object with a "suggestions" array. Each item must have:');
+  parts.push(
+    'OUTPUT FORMAT: Return a JSON object with a "suggestions" array. Each item must have:',
+  );
   parts.push('- "id": the entry ID');
   parts.push('- "msgstr": the translated string');
   parts.push('- "plural": array of plural translations (or null if not plural)');

@@ -16,7 +16,7 @@ export function getOpenAIClient(): OpenAI {
 export async function callTranslation(
   model: string,
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
 ): Promise<{ content: string; usage: { inputTokens: number; outputTokens: number } }> {
   const openai = getOpenAIClient();
   const response = await openai.chat.completions.create({
@@ -30,7 +30,8 @@ export async function callTranslation(
   });
 
   const choice = response.choices[0];
-  if (!choice?.message?.content) {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive: empty array guard
+  if (!choice?.message.content) {
     throw new Error('Empty response from OpenAI');
   }
 

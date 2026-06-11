@@ -45,7 +45,7 @@ export function serializePo(entries: PoEntry[], metadata: PoMetadata): string {
     if (entry.msgidPlural) {
       lines.push(`msgid_plural "${escapeForPo(entry.msgidPlural)}"`);
       entry.msgstrPlural.forEach((msgstr, i) => {
-        lines.push(`msgstr[${i}] "${escapeForPo(msgstr)}"`);
+        lines.push(`msgstr[${String(i)}] "${escapeForPo(msgstr)}"`);
       });
     } else {
       lines.push(`msgstr "${escapeForPo(entry.msgstr)}"`);
@@ -69,7 +69,8 @@ export function serializeMo(entries: PoEntry[], metadata: PoMetadata): Buffer {
   for (const entry of entries) {
     if (entry.isObsolete) continue;
 
-    const context = entry.msgctxt || '';
+    const context = entry.msgctxt ?? '';
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Record type doesn't model missing keys
     if (!translations[context]) {
       translations[context] = {};
     }

@@ -30,7 +30,9 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
         if (!value) onChange(data.defaultModel);
       })
       .catch(console.error)
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   return (

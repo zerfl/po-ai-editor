@@ -11,7 +11,7 @@ export const parseRoute = new Hono();
 
 parseRoute.post('/parse', async (c) => {
   try {
-    const body = await c.req.json();
+    const body: unknown = await c.req.json();
     const result = ParseRequestSchema.safeParse(body);
 
     if (!result.success) {

@@ -17,24 +17,24 @@ export function PotLoader() {
         const content = await file.text();
         const result = await parseFile(content, file.name);
         dispatch({ type: 'MERGE_ENTRIES', payload: result });
-        toast.success(`Merged ${result.entries.length} entries from ${file.name}`);
+        toast.success(`Merged ${String(result.entries.length)} entries from ${file.name}`);
       } catch (error) {
         toast.error(
-          `Failed to load POT file: ${error instanceof Error ? error.message : 'Unknown error'}`
+          `Failed to load POT file: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
       } finally {
         setIsLoading(false);
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) handleFile(file);
+      if (file) void handleFile(file);
     },
-    [handleFile]
+    [handleFile],
   );
 
   return (

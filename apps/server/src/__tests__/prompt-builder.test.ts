@@ -8,14 +8,10 @@ const sampleRequest: TranslateRequest = {
   targetLanguage: 'German',
   style: { formality: 'formal', tone: 'technical' },
   customInstructions: 'Use formal German',
-  glossary: [
-    { source: 'Settings', target: 'Einstellungen', note: 'UI term' },
-  ],
+  glossary: [{ source: 'Settings', target: 'Einstellungen', note: 'UI term' }],
   context: {
     mode: 'style-sample',
-    existingTranslations: [
-      { msgid: 'Save', msgstr: 'Speichern' },
-    ],
+    existingTranslations: [{ msgid: 'Save', msgstr: 'Speichern' }],
   },
   entries: [
     {

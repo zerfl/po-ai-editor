@@ -13,10 +13,12 @@ export const TranslationStyleSchema = z.object({
 
 export const TranslationContextSchema = z.object({
   mode: z.enum(['style-sample', 'full-context', 'minimal']),
-  existingTranslations: z.array(z.object({
-    msgid: z.string(),
-    msgstr: z.string(),
-  })),
+  existingTranslations: z.array(
+    z.object({
+      msgid: z.string(),
+      msgstr: z.string(),
+    }),
+  ),
 });
 
 export const TranslateEntrySchema = z.object({

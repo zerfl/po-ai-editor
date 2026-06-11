@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsePo, parsePot } from '../services/po-parser';
+import { parsePo } from '../services/po-parser';
 
 const samplePo = `# Test PO file
 msgid ""

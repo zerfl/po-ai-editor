@@ -16,18 +16,16 @@ export function PoLoader() {
         const content = await file.text();
         const result = await parseFile(content, file.name);
         dispatch({ type: 'LOAD_FILE', payload: result });
-        toast.success(
-          `Loaded ${result.entries.length} entries from ${file.name}`
-        );
+        toast.success(`Loaded ${String(result.entries.length)} entries from ${file.name}`);
       } catch (error) {
         toast.error(
-          `Failed to load file: ${error instanceof Error ? error.message : 'Unknown error'}`
+          `Failed to load file: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
       } finally {
         setIsLoading(false);
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleDrop = useCallback(
@@ -35,9 +33,9 @@ export function PoLoader() {
       e.preventDefault();
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+      if (file) void handleFile(file);
     },
-    [handleFile]
+    [handleFile],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -52,9 +50,9 @@ export function PoLoader() {
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) handleFile(file);
+      if (file) void handleFile(file);
     },
-    [handleFile]
+    [handleFile],
   );
 
   return (
@@ -86,9 +84,7 @@ export function PoLoader() {
           <p className="text-sm font-medium">
             {isLoading ? 'Loading...' : 'Drop a .po or .pot file here'}
           </p>
-          <p className="text-muted-foreground mt-1 text-xs">
-            or click to browse
-          </p>
+          <p className="text-muted-foreground mt-1 text-xs">or click to browse</p>
         </div>
       </div>
       <div className="text-muted-foreground mt-4 flex items-center justify-center gap-1.5 text-[11px]">

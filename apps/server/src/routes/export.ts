@@ -12,7 +12,7 @@ export const exportRoute = new Hono();
 
 exportRoute.post('/export/po', async (c) => {
   try {
-    const body = await c.req.json();
+    const body: unknown = await c.req.json();
     const result = ExportRequestSchema.safeParse(body);
 
     if (!result.success) {
@@ -33,7 +33,7 @@ exportRoute.post('/export/po', async (c) => {
 
 exportRoute.post('/export/mo', async (c) => {
   try {
-    const body = await c.req.json();
+    const body: unknown = await c.req.json();
     const result = ExportRequestSchema.safeParse(body);
 
     if (!result.success) {

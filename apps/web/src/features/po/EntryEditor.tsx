@@ -5,13 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import {
-  MessageSquare,
-  FileCode,
-  BookOpen,
-  Keyboard,
-  Check,
-} from 'lucide-react';
+import { MessageSquare, FileCode, BookOpen, Keyboard, Check } from 'lucide-react';
 
 export function EntryEditor() {
   const { state, dispatch } = usePoStore();
@@ -19,28 +13,23 @@ export function EntryEditor() {
   const [pluralMsgstrs, setPluralMsgstrs] = useState<string[]>([]);
   const [saved, setSaved] = useState(true);
 
-  const entry = state.file?.entries.find(
-    (e) => e.id === state.selectedEntryId
-  );
+  const entry = state.file?.entries.find((e) => e.id === state.selectedEntryId);
 
   useEffect(() => {
     if (entry) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing local form state with selected entry
       setMsgstr(entry.msgstr);
-      setPluralMsgstrs(
-        entry.msgstrPlural.length > 0 ? [...entry.msgstrPlural] : ['']
-      );
+      setPluralMsgstrs(entry.msgstrPlural.length > 0 ? [...entry.msgstrPlural] : ['']);
       setSaved(true);
     }
-  }, [entry?.id]);
+  }, [entry?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- only reset on entry ID change
 
   if (!entry) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
         <Keyboard className="size-5" />
         <p className="text-sm">Select an entry to edit</p>
-        <p className="text-[11px]">
-          Use ↑↓ or j/k to navigate
-        </p>
+        <p className="text-[11px]">Use ↑↓ or j/k to navigate</p>
       </div>
     );
   }
@@ -111,9 +100,7 @@ export function EntryEditor() {
                 Saved
               </span>
             ) : (
-              <span className="text-muted-foreground text-[11px]">
-                Unsaved
-              </span>
+              <span className="text-muted-foreground text-[11px]">Unsaved</span>
             )}
           </div>
         </div>
@@ -127,9 +114,7 @@ export function EntryEditor() {
               <MessageSquare className="size-3" />
               Context
             </Label>
-            <div className="bg-muted mt-1 rounded p-2 font-mono text-xs">
-              {entry.msgctxt}
-            </div>
+            <div className="bg-muted mt-1 rounded p-2 font-mono text-xs">{entry.msgctxt}</div>
           </div>
         )}
 
@@ -147,9 +132,7 @@ export function EntryEditor() {
         {/* Source plural */}
         {entry.msgidPlural && (
           <div className="mb-3">
-            <Label className="text-muted-foreground text-[11px]">
-              Source (plural)
-            </Label>
+            <Label className="text-muted-foreground text-[11px]">Source (plural)</Label>
             <div className="bg-muted mt-1 rounded p-2 font-mono text-xs whitespace-pre-wrap break-all">
               {entry.msgidPlural}
             </div>
@@ -157,9 +140,7 @@ export function EntryEditor() {
         )}
 
         {/* Comments */}
-        {(entry.comments.translator ||
-          entry.comments.extracted ||
-          entry.comments.reference) && (
+        {(entry.comments.translator || entry.comments.extracted || entry.comments.reference) && (
           <>
             <Separator className="my-3" />
             <div className="mb-3 space-y-2">
@@ -169,8 +150,7 @@ export function EntryEditor() {
               </Label>
               {entry.comments.translator && (
                 <div className="rounded border border-blue-200 bg-blue-50 p-2 text-xs text-blue-800">
-                  <span className="font-medium">Translator:</span>{' '}
-                  {entry.comments.translator}
+                  <span className="font-medium">Translator:</span> {entry.comments.translator}
                 </div>
               )}
               {entry.comments.extracted && (
@@ -195,15 +175,15 @@ export function EntryEditor() {
             <Label className="text-[11px]">Translations (plural)</Label>
             {pluralMsgstrs.map((str, i) => (
               <div key={i}>
-                <Label className="text-muted-foreground text-[11px]">
-                  Plural form {i}
-                </Label>
+                <Label className="text-muted-foreground text-[11px]">Plural form {i}</Label>
                 <Textarea
                   value={str}
-                  onChange={(e) => handlePluralChange(i, e.target.value)}
+                  onChange={(e) => {
+                    handlePluralChange(i, e.target.value);
+                  }}
                   onBlur={handleSave}
                   className="mt-1 font-mono text-xs min-h-[60px] resize-y"
-                  placeholder={`Plural form ${i}`}
+                  placeholder={`Plural form ${String(i)}`}
                 />
               </div>
             ))}
@@ -212,13 +192,13 @@ export function EntryEditor() {
           <div>
             <div className="flex items-center justify-between">
               <Label className="text-[11px]">Translation</Label>
-              <span className="text-muted-foreground text-[10px]">
-                ⌘+Enter to save
-              </span>
+              <span className="text-muted-foreground text-[10px]">⌘+Enter to save</span>
             </div>
             <Textarea
               value={msgstr}
-              onChange={(e) => handleMsgstrChange(e.target.value)}
+              onChange={(e) => {
+                handleMsgstrChange(e.target.value);
+              }}
               onBlur={handleSave}
               className="mt-1 font-mono text-xs min-h-[120px] resize-y"
               placeholder="Enter translation..."

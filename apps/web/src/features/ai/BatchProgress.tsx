@@ -7,11 +7,7 @@ interface BatchProgressProps {
   onRetryFailed: () => void;
 }
 
-export function BatchProgress({
-  current,
-  total,
-  failed,
-}: BatchProgressProps) {
+export function BatchProgress({ current, total, failed }: BatchProgressProps) {
   const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
 
   return (
@@ -20,11 +16,7 @@ export function BatchProgress({
         <span className="text-muted-foreground">Translating...</span>
         <span className="text-muted-foreground">
           {current}/{total} batches
-          {failed > 0 && (
-            <span className="text-destructive ml-1">
-              ({failed} failed)
-            </span>
-          )}
+          {failed > 0 && <span className="text-destructive ml-1">({failed} failed)</span>}
         </span>
       </div>
       <Progress value={percentage} className="h-1.5" />

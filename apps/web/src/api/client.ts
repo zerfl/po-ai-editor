@@ -11,7 +11,7 @@ async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const error = await res.text();
-    throw new Error(`API error ${res.status}: ${error}`);
+    throw new Error(`API error ${String(res.status)}: ${error}`);
   }
   return res.json() as Promise<T>;
 }
@@ -20,7 +20,10 @@ export async function healthCheck(): Promise<{ ok: boolean }> {
   return fetchJson('/health');
 }
 
-export async function getModels(): Promise<{ defaultModel: string; models: Array<{ id: string; label: string }> }> {
+export async function getModels(): Promise<{
+  defaultModel: string;
+  models: Array<{ id: string; label: string }>;
+}> {
   return fetchJson('/models');
 }
 
@@ -44,7 +47,7 @@ export async function exportPo(request: ExportRequest): Promise<Blob> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
-  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  if (!res.ok) throw new Error(`Export failed: ${String(res.status)}`);
   return res.blob();
 }
 
@@ -54,6 +57,6 @@ export async function exportMo(request: ExportRequest): Promise<Blob> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
-  if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+  if (!res.ok) throw new Error(`Export failed: ${String(res.status)}`);
   return res.blob();
 }

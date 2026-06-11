@@ -23,9 +23,7 @@ export function SuggestionReview({
     <div className="rounded-lg border">
       <div className="flex items-center justify-between border-b px-3 py-2">
         <div className="flex items-center gap-2">
-          <h3 className="text-xs font-medium">
-            Suggestions ({suggestions.length})
-          </h3>
+          <h3 className="text-xs font-medium">Suggestions ({suggestions.length})</h3>
           {reviewCount > 0 && (
             <Badge
               variant="secondary"
@@ -37,10 +35,7 @@ export function SuggestionReview({
           )}
         </div>
         <div className="flex gap-1">
-          <Button
-            size="xs"
-            onClick={onApply}
-          >
+          <Button size="xs" onClick={onApply}>
             <Check />
             Apply All
           </Button>
@@ -58,18 +53,12 @@ export function SuggestionReview({
 
             return (
               <div key={suggestion.id} className="px-3 py-2">
-                <p className="text-foreground truncate font-mono text-[11px]">
-                  {entry.msgid}
-                </p>
+                <p className="text-foreground truncate font-mono text-[11px]">{entry.msgid}</p>
                 <div className="mt-1 text-xs">
                   {entry.msgstr && (
-                    <span className="text-muted-foreground line-through">
-                      {entry.msgstr}
-                    </span>
+                    <span className="text-muted-foreground line-through">{entry.msgstr}</span>
                   )}
-                  {entry.msgstr && (
-                    <span className="text-muted-foreground mx-1.5">→</span>
-                  )}
+                  {entry.msgstr && <span className="text-muted-foreground mx-1.5">→</span>}
                   <span className="text-foreground">{suggestion.msgstr}</span>
                 </div>
                 {suggestion.notes.length > 0 && (

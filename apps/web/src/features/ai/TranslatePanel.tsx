@@ -35,9 +35,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
   const [totalBatches, setTotalBatches] = useState(0);
   const [failedBatches, setFailedBatches] = useState(0);
 
-  const selectedEntries = filteredEntries.filter((e) =>
-    state.selectedEntryIds.has(e.id)
-  );
+  const selectedEntries = filteredEntries.filter((e) => state.selectedEntryIds.has(e.id));
 
   const handleTranslate = useCallback(async () => {
     if (selectedEntries.length === 0) {
@@ -49,7 +47,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
     setSuggestions([]);
     setFailedBatches(0);
 
-    const batches: typeof selectedEntries[] = [];
+    const batches: (typeof selectedEntries)[] = [];
     for (let i = 0; i < selectedEntries.length; i += batchSize) {
       batches.push(selectedEntries.slice(i, i + batchSize));
     }
@@ -66,11 +64,11 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
           state.file?.entries
             .filter((e) => e.isTranslated && !e.isFuzzy)
             .slice(0, 10)
-            .map((e) => ({ msgid: e.msgid, msgstr: e.msgstr })) || [];
+            .map((e) => ({ msgid: e.msgid, msgstr: e.msgstr })) ?? [];
 
         const response = await translate({
           model,
-          sourceLanguage: state.file?.metadata.language || 'English',
+          sourceLanguage: state.file?.metadata.language ?? 'English',
           targetLanguage: 'German',
           style: { formality, tone },
           customInstructions,
@@ -84,11 +82,9 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
             msgctxt: e.msgctxt,
             msgid: e.msgid,
             msgidPlural: e.msgidPlural,
-            comments: [
-              e.comments.translator,
-              e.comments.extracted,
-              e.comments.reference,
-            ].filter(Boolean) as string[],
+            comments: [e.comments.translator, e.comments.extracted, e.comments.reference].filter(
+              Boolean,
+            ) as string[],
             references: e.comments.reference ? [e.comments.reference] : [],
             flags: e.isFuzzy ? ['fuzzy'] : [],
           })),
@@ -98,14 +94,14 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
       } catch (error) {
         setFailedBatches((prev) => prev + 1);
         toast.error(
-          `Batch ${i + 1} failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+          `Batch ${String(i + 1)} failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
       }
     }
 
     setSuggestions(allSuggestions);
     setIsTranslating(false);
-    toast.success(`Got ${allSuggestions.length} suggestions`);
+    toast.success(`Got ${String(allSuggestions.length)} suggestions`);
   }, [
     selectedEntries,
     model,
@@ -118,7 +114,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
   ]);
 
   const handleRetryFailed = useCallback(() => {
-    handleTranslate();
+    void handleTranslate();
   }, [handleTranslate]);
 
   const handleApply = useCallback(() => {
@@ -140,11 +136,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
         {/* Target language */}
         <div>
           <Label className="text-[11px]">Target Language</Label>
-          <Input
-            value="German"
-            disabled
-            className="mt-1 h-8 text-xs bg-muted"
-          />
+          <Input value="German" disabled className="mt-1 h-8 text-xs bg-muted" />
         </div>
 
         {/* Model */}
@@ -163,10 +155,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
         <Separator />
 
         {/* Custom instructions */}
-        <CustomInstructions
-          value={customInstructions}
-          onChange={setCustomInstructions}
-        />
+        <CustomInstructions value={customInstructions} onChange={setCustomInstructions} />
 
         <Separator />
 
@@ -174,13 +163,13 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
         <div>
           <div className="flex items-center justify-between">
             <Label className="text-[11px]">Batch Size</Label>
-            <span className="text-muted-foreground text-[11px]">
-              {batchSize} entries
-            </span>
+            <span className="text-muted-foreground text-[11px]">{batchSize} entries</span>
           </div>
           <Slider
             value={[batchSize]}
-            onValueChange={([value]) => setBatchSize(value)}
+            onValueChange={([value]) => {
+              setBatchSize(value);
+            }}
             min={5}
             max={100}
             step={5}
@@ -193,18 +182,16 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
         {/* Actions */}
         <div className="flex gap-2">
           <Button
-            onClick={handleTranslate}
+            onClick={() => void handleTranslate()}
             disabled={isTranslating || selectedEntries.length === 0}
             className="flex-1 h-8 text-xs"
             size="sm"
           >
             <Languages />
-            {isTranslating
-              ? 'Translating...'
-              : `Translate ${selectedEntries.length}`}
+            {isTranslating ? 'Translating...' : `Translate ${String(selectedEntries.length)}`}
           </Button>
           <Button
-            onClick={handleTranslate}
+            onClick={() => void handleTranslate()}
             disabled={isTranslating || !state.file}
             variant="outline"
             size="sm"
@@ -249,7 +236,9 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
             suggestions={suggestions}
             entries={selectedEntries}
             onApply={handleApply}
-            onDismiss={() => setSuggestions([])}
+            onDismiss={() => {
+              setSuggestions([]);
+            }}
           />
         )}
       </div>
