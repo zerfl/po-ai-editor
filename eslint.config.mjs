@@ -26,10 +26,10 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'error',
 
       // Vercel best practices alignment (type-checked rules)
-      '@typescript-eslint/no-floating-promises': 'error',    // async-parallel: always handle promises
-      '@typescript-eslint/no-misused-promises': 'error',     // async: don't pass async where sync expected
-      '@typescript-eslint/require-await': 'warn',            // async: don't mark functions async needlessly
-      '@typescript-eslint/await-thenable': 'error',          // async: only await actual promises
+      '@typescript-eslint/no-floating-promises': 'error', // async-parallel: always handle promises
+      '@typescript-eslint/no-misused-promises': 'error', // async: don't pass async where sync expected
+      '@typescript-eslint/require-await': 'warn', // async: don't mark functions async needlessly
+      '@typescript-eslint/await-thenable': 'error', // async: only await actual promises
       '@typescript-eslint/no-unnecessary-condition': 'warn', // rendering: avoid dead code branches
       '@typescript-eslint/prefer-nullish-coalescing': 'warn', // js: prefer ?? over ||
     },
@@ -58,10 +58,10 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
 
       // Vercel best practices: re-render optimization
-      'react/jsx-no-bind': 'warn',                          // stable callbacks to avoid re-renders
-      'react/no-unstable-nested-components': 'error',       // rerender-no-inline-components
-      'react/hook-use-state': 'warn',                       // clarity on useState usage
-      'react/no-object-type-as-default-prop': 'warn',      // rerender-memo-with-default-value
+      'react/jsx-no-bind': ['warn', { ignoreRefs: true, ignoreDOMComponents: true }],
+      'react/no-unstable-nested-components': 'error', // rerender-no-inline-components
+      'react/hook-use-state': 'warn', // clarity on useState usage
+      'react/no-object-type-as-default-prop': 'warn', // rerender-memo-with-default-value
     },
   },
 
