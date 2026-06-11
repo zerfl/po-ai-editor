@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc -w",
+    "dev": "tsc -w --preserveWatchOutput",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
