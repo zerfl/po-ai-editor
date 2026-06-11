@@ -1,6 +1,9 @@
 import { usePoStore } from '../po/usePoStore';
 import { exportPo, exportMo } from '@/api/client';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { FileDown, FileCode } from 'lucide-react';
 
 export function ExportButtons() {
   const { state } = usePoStore();
@@ -44,21 +47,27 @@ export function ExportButtons() {
   };
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium">Export</h3>
-      <div className="flex gap-2">
-        <button
+    <div>
+      <Label className="text-[11px]">Export</Label>
+      <div className="mt-2 flex gap-2">
+        <Button
           onClick={handleExportPo}
-          className="flex-1 border px-3 py-2 rounded text-sm hover:bg-muted"
+          variant="outline"
+          size="sm"
+          className="flex-1 h-8 text-xs"
         >
-          Export .po
-        </button>
-        <button
+          <FileDown />
+          .po file
+        </Button>
+        <Button
           onClick={handleExportMo}
-          className="flex-1 border px-3 py-2 rounded text-sm hover:bg-muted"
+          variant="outline"
+          size="sm"
+          className="flex-1 h-8 text-xs"
         >
-          Generate .mo
-        </button>
+          <FileCode />
+          .mo binary
+        </Button>
       </div>
     </div>
   );
