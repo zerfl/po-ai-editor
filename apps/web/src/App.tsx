@@ -97,6 +97,9 @@ function AppContent() {
                   <TabsTrigger value="export" className="text-xs">
                     Export
                   </TabsTrigger>
+                  <TabsTrigger value="update" className="text-xs">
+                    Update
+                  </TabsTrigger>
                 </TabsList>
               </div>
               <TabsContent value="translate" className="m-0 flex-1 overflow-auto">
@@ -106,8 +109,12 @@ function AppContent() {
                 <GlossaryEditor glossary={glossary} onChange={setGlossary} />
               </TabsContent>
               <TabsContent value="export" className="m-0 flex-1 overflow-auto">
-                <div className="space-y-4 p-3">
+                <div className="p-3">
                   <ExportButtons />
+                </div>
+              </TabsContent>
+              <TabsContent value="update" className="m-0 flex-1 overflow-auto">
+                <div className="flex h-full items-center justify-center p-3">
                   <PotLoader />
                 </div>
               </TabsContent>
