@@ -6,8 +6,8 @@
     "build": "turbo build",
     "test": "turbo test",
     "lint": "turbo lint",
-    "format": "turbo format",
-    "format:check": "turbo format:check"
+    "format": "prettier --write apps/ packages/",
+    "format:check": "prettier --check apps/ packages/"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
