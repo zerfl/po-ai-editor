@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
-import type { PoEntry, PoFile, PoMetadata } from '@po-ai-editor/shared';
+import type { PoEntry, PoFile } from '@po-ai-editor/shared';
 
 interface PoState {
   file: PoFile | null;
@@ -11,6 +11,7 @@ interface PoState {
 
 type PoAction =
   | { type: 'LOAD_FILE'; payload: PoFile }
+  | { type: 'RESET_FILE' }
   | { type: 'SELECT_ENTRY'; payload: string }
   | { type: 'TOGGLE_ENTRY'; payload: string }
   | { type: 'SELECT_ALL' }
@@ -38,6 +39,11 @@ function poReducer(state: PoState, action: PoAction): PoState {
         file: action.payload,
         selectedEntryId: null,
         selectedEntryIds: new Set(),
+      };
+
+    case 'RESET_FILE':
+      return {
+        ...initialState,
       };
 
     case 'SELECT_ENTRY':
@@ -133,7 +139,6 @@ function poReducer(state: PoState, action: PoAction): PoState {
           return {
             ...existing,
             comments: newEntry.comments,
-            references: newEntry.comments.reference ? [newEntry.comments.reference] : existing.references,
           };
         }
         return { ...newEntry, msgstr: '', isTranslated: false };
