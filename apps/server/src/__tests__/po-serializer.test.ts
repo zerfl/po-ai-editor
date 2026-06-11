@@ -157,4 +157,42 @@ msgstr "Hallo"
     const serialized = serializePo(parsed.entries, parsed.metadata);
     expect(serialized).not.toContain('X-Generator');
   });
+
+  it('should use metadata for header, not raw entry msgstr', () => {
+    const entries: PoEntry[] = [
+      {
+        id: '0',
+        msgctxt: null,
+        msgid: '',
+        msgidPlural: null,
+        msgstr: 'Language: stale\\n',
+        msgstrPlural: [],
+        comments: {},
+        isFuzzy: false,
+        isObsolete: false,
+        isTranslated: true,
+      },
+      {
+        id: '1',
+        msgctxt: null,
+        msgid: 'Hello',
+        msgidPlural: null,
+        msgstr: 'Hallo',
+        msgstrPlural: [],
+        comments: {},
+        isFuzzy: false,
+        isObsolete: false,
+        isTranslated: true,
+      },
+    ];
+    const metadata: PoMetadata = {
+      ...sampleMetadata,
+      language: 'fr',
+      lastTranslator: 'Updated Translator',
+    };
+    const result = serializePo(entries, metadata);
+    expect(result).toContain('Language: fr');
+    expect(result).toContain('Last-Translator: Updated Translator');
+    expect(result).not.toContain('stale');
+  });
 });

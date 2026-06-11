@@ -11,12 +11,11 @@ function escapeForPo(str: string): string {
     .replace(/\t/g, '\\t');
 }
 
-function updateGenerator(msgstr: string): string {
-  return msgstr.replace(/^(X-Generator:\s*).+$/m, `$1${APP_GENERATOR}`);
-}
-
 export function serializePo(entries: PoEntry[], metadata: PoMetadata): string {
   const lines: string[] = [];
+  const effectiveMetadata: PoMetadata = metadata.xGenerator
+    ? { ...metadata, xGenerator: APP_GENERATOR }
+    : metadata;
 
   for (const entry of entries) {
     if (entry.isObsolete) {
@@ -45,7 +44,7 @@ export function serializePo(entries: PoEntry[], metadata: PoMetadata): string {
 
     lines.push(`msgid "${escapeForPo(entry.msgid)}"`);
 
-    const msgstr = entry.msgid === '' ? updateGenerator(entry.msgstr) : entry.msgstr;
+    const msgstr = entry.msgid === '' ? buildHeaderString(effectiveMetadata) : entry.msgstr;
 
     if (entry.msgidPlural) {
       lines.push(`msgid_plural "${escapeForPo(entry.msgidPlural)}"`);
@@ -96,7 +95,7 @@ export function serializeMo(entries: PoEntry[], metadata: PoMetadata): Buffer {
 }
 
 function buildHeaderString(metadata: PoMetadata): string {
-  return [
+  const headers = [
     `Project-Id-Version: ${metadata.projectVersion}`,
     `Report-Msgid-Bugs-To: ${metadata.reportMsgidBugsTo}`,
     `POT-Creation-Date: ${metadata.potCreationDate}`,
@@ -107,5 +106,9 @@ function buildHeaderString(metadata: PoMetadata): string {
     `Content-Type: ${metadata.contentType}`,
     `Content-Transfer-Encoding: ${metadata.contentTransferEncoding}`,
     `Plural-Forms: ${metadata.pluralForms}`,
-  ].join('\n');
+  ];
+  if (metadata.xGenerator) {
+    headers.push(`X-Generator: ${metadata.xGenerator}`);
+  }
+  return headers.join('\n');
 }

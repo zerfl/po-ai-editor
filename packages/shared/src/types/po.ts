@@ -29,6 +29,7 @@ export interface PoMetadata {
   contentType: string;
   contentTransferEncoding: string;
   pluralForms: string;
+  xGenerator?: string;
 }
 
 export interface PoFile {

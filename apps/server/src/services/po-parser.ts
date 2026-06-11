@@ -71,6 +71,7 @@ export function parsePo(content: string, filename: string): PoFile {
     contentType: headerMap['Content-Type'] ?? 'text/plain; charset=UTF-8',
     contentTransferEncoding: headerMap['Content-Transfer-Encoding'] ?? '8bit',
     pluralForms: headerMap['Plural-Forms'] ?? 'nplurals=2; plural=(n != 1);',
+    xGenerator: headerMap['X-Generator'] || undefined,
   };
 
   return { entries, metadata, filename };
