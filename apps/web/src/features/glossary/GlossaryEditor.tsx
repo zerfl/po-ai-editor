@@ -3,7 +3,7 @@ import type { Glossary } from '@po-ai-editor/shared';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Separator } from '@/components/ui/separator';
 import { Plus, X, BookOpen } from 'lucide-react';
 
@@ -44,7 +44,7 @@ export function GlossaryEditor({ glossary, onChange }: GlossaryEditorProps) {
   };
 
   return (
-    <ScrollArea className="h-full">
+    <div className="h-full overflow-y-auto scrollbar-thin scrollbar-gutter-stable scrollbar-thumb-border scrollbar-track-transparent">
       <div className="space-y-4 p-3">
         {/* Existing terms */}
         {glossary.length > 0 && (
@@ -118,6 +118,6 @@ export function GlossaryEditor({ glossary, onChange }: GlossaryEditorProps) {
           </Button>
         </div>
       </div>
-    </ScrollArea>
+    </div>
   );
 }

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Slider } from '@/components/ui/slider';
 import { Languages, Sparkles, RotateCcw } from 'lucide-react';
 import type { TranslationSuggestion, GlossaryTerm, Formality, Tone } from '@po-ai-editor/shared';
@@ -131,7 +131,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
   }, [dispatch, suggestions]);
 
   return (
-    <ScrollArea className="h-full">
+    <div className="h-full overflow-y-auto scrollbar-thin scrollbar-gutter-stable scrollbar-thumb-border scrollbar-track-transparent">
       <div className="space-y-4 p-3">
         {/* Target language */}
         <div>
@@ -242,6 +242,6 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
           />
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 }

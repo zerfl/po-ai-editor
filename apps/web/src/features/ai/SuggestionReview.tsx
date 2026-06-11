@@ -1,8 +1,8 @@
-import type { TranslationSuggestion, PoEntry } from '@po-ai-editor/shared';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Check, X, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+import type { PoEntry, TranslationSuggestion } from '@po-ai-editor/shared';
+import { AlertTriangle, Check, X } from 'lucide-react';
 
 interface SuggestionReviewProps {
   suggestions: TranslationSuggestion[];
@@ -45,7 +45,7 @@ export function SuggestionReview({
           </Button>
         </div>
       </div>
-      <ScrollArea className="max-h-[300px]">
+      <div className="overflow-y-auto scrollbar-thin scrollbar-gutter-stable scrollbar-thumb-border scrollbar-track-transparent">
         <div className="divide-y">
           {suggestions.map((suggestion) => {
             const entry = entries.find((e) => e.id === suggestion.id);
@@ -53,7 +53,7 @@ export function SuggestionReview({
 
             return (
               <div key={suggestion.id} className="px-3 py-2">
-                <p className="text-foreground truncate font-mono text-[11px]">{entry.msgid}</p>
+                <p className="text-foreground text-wrap font-mono text-[11px]">{entry.msgid}</p>
                 <div className="mt-1 text-xs">
                   {entry.msgstr && (
                     <span className="text-muted-foreground line-through">{entry.msgstr}</span>
@@ -70,7 +70,7 @@ export function SuggestionReview({
             );
           })}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

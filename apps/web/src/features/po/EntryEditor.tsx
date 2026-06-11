@@ -2,7 +2,7 @@ import { usePoStore } from './usePoStore';
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { MessageSquare, FileCode, BookOpen, Keyboard, Check } from 'lucide-react';
@@ -71,7 +71,7 @@ export function EntryEditor() {
   };
 
   return (
-    <ScrollArea className="h-full">
+    <div className="h-full overflow-y-auto scrollbar-thin scrollbar-gutter-stable scrollbar-thumb-border scrollbar-track-transparent">
       <div className="p-3" onKeyDown={handleKeyDown}>
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -206,6 +206,6 @@ export function EntryEditor() {
           </div>
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 }

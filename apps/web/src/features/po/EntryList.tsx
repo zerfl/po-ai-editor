@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import {
   Select,
   SelectContent,
@@ -178,7 +178,7 @@ export function EntryList() {
       </div>
 
       {/* Entry list */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-gutter-stable scrollbar-thumb-border scrollbar-track-transparent">
         <div ref={listRef} className="divide-y">
           {filteredEntries.length === 0 ? (
             <div className="text-muted-foreground flex items-center justify-center py-12 text-sm">
@@ -237,7 +237,7 @@ export function EntryList() {
             ))
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
