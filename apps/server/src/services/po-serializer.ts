@@ -1,6 +1,8 @@
 import gettextParser from 'gettext-parser';
 import type { PoEntry, PoMetadata } from '@po-ai-editor/shared';
 
+const APP_GENERATOR = 'PO AI Editor';
+
 function escapeForPo(str: string): string {
   return str
     .replace(/\\/g, '\\\\')
@@ -9,13 +11,12 @@ function escapeForPo(str: string): string {
     .replace(/\t/g, '\\t');
 }
 
+function updateGenerator(msgstr: string): string {
+  return msgstr.replace(/^(X-Generator:\s*).+$/m, `$1${APP_GENERATOR}`);
+}
+
 export function serializePo(entries: PoEntry[], metadata: PoMetadata): string {
   const lines: string[] = [];
-
-  lines.push('# PO AI Editor Export');
-  lines.push(`# Language: ${metadata.language}`);
-  lines.push(`# Plural-Forms: ${metadata.pluralForms}`);
-  lines.push('');
 
   for (const entry of entries) {
     if (entry.isObsolete) {
@@ -24,7 +25,9 @@ export function serializePo(entries: PoEntry[], metadata: PoMetadata): string {
     }
 
     if (entry.comments.translator) {
-      lines.push(`# ${entry.comments.translator}`);
+      for (const line of entry.comments.translator.split('\n')) {
+        lines.push(`# ${line}`);
+      }
     }
     if (entry.comments.extracted) {
       lines.push(`#. ${entry.comments.extracted}`);
@@ -42,13 +45,15 @@ export function serializePo(entries: PoEntry[], metadata: PoMetadata): string {
 
     lines.push(`msgid "${escapeForPo(entry.msgid)}"`);
 
+    const msgstr = entry.msgid === '' ? updateGenerator(entry.msgstr) : entry.msgstr;
+
     if (entry.msgidPlural) {
       lines.push(`msgid_plural "${escapeForPo(entry.msgidPlural)}"`);
-      entry.msgstrPlural.forEach((msgstr, i) => {
-        lines.push(`msgstr[${String(i)}] "${escapeForPo(msgstr)}"`);
+      entry.msgstrPlural.forEach((pluralStr, i) => {
+        lines.push(`msgstr[${String(i)}] "${escapeForPo(pluralStr)}"`);
       });
     } else {
-      lines.push(`msgstr "${escapeForPo(entry.msgstr)}"`);
+      lines.push(`msgstr "${escapeForPo(msgstr)}"`);
     }
 
     lines.push('');
