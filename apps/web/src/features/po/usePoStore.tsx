@@ -16,6 +16,7 @@ type PoAction =
   | { type: 'TOGGLE_ENTRY'; payload: string }
   | { type: 'SELECT_ALL' }
   | { type: 'DESELECT_ALL' }
+  | { type: 'SELECT_BY_STATUS'; payload: PoState['filter'] }
   | { type: 'UPDATE_ENTRY'; payload: { id: string; msgstr: string } }
   | { type: 'UPDATE_ENTRY_PLURAL'; payload: { id: string; index: number; msgstr: string } }
   | { type: 'SET_FILTER'; payload: PoState['filter'] }
@@ -70,6 +71,24 @@ function poReducer(state: PoState, action: PoAction): PoState {
 
     case 'DESELECT_ALL':
       return { ...state, selectedEntryIds: new Set() };
+
+    case 'SELECT_BY_STATUS': {
+      if (!state.file) return state;
+      const matching = state.file.entries.filter((e) => statusMatch(e, action.payload));
+      if (matching.length === 0) return state;
+      const allSelected = matching.every((e) => state.selectedEntryIds.has(e.id));
+      if (allSelected) {
+        const removeIds = new Set(matching.map((e) => e.id));
+        return {
+          ...state,
+          selectedEntryIds: new Set([...state.selectedEntryIds].filter((id) => !removeIds.has(id))),
+        };
+      }
+      return {
+        ...state,
+        selectedEntryIds: new Set(matching.map((e) => e.id)),
+      };
+    }
 
     case 'UPDATE_ENTRY': {
       if (!state.file) return state;
@@ -166,19 +185,22 @@ function poReducer(state: PoState, action: PoAction): PoState {
   }
 }
 
+export function statusMatch(entry: PoEntry, status: PoState['filter']): boolean {
+  return (
+    status === 'all' ||
+    (status === 'translated' && entry.isTranslated && !entry.isFuzzy) ||
+    (status === 'untranslated' && !entry.isTranslated) ||
+    (status === 'fuzzy' && entry.isFuzzy) ||
+    (status === 'obsolete' && entry.isObsolete)
+  );
+}
+
 function getFilteredEntries(state: PoState): PoEntry[] {
   if (!state.file) return [];
   const q = state.searchQuery ? state.searchQuery.toLowerCase() : '';
 
   return state.file.entries.filter((e) => {
-    const matchesStatus =
-      state.filter === 'all' ||
-      (state.filter === 'translated' && e.isTranslated && !e.isFuzzy) ||
-      (state.filter === 'untranslated' && !e.isTranslated) ||
-      (state.filter === 'fuzzy' && e.isFuzzy) ||
-      (state.filter === 'obsolete' && e.isObsolete);
-
-    if (!matchesStatus) return false;
+    if (!statusMatch(e, state.filter)) return false;
     if (!q) return true;
 
     return (

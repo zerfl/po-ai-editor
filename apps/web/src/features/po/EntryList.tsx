@@ -1,5 +1,6 @@
 import { memo, useCallback, useRef, useEffect, useTransition } from 'react';
-import { usePoStore } from './usePoStore';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { usePoStore, statusMatch } from './usePoStore';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, CheckSquare, Square } from 'lucide-react';
+import { Search, CheckSquare, Square, MinusSquare } from 'lucide-react';
 import type { PoEntry } from '@po-ai-editor/shared';
 
 type FilterType = 'all' | 'translated' | 'untranslated' | 'fuzzy' | 'obsolete';
@@ -64,7 +65,6 @@ interface EntryRowProps {
   isChecked: boolean;
   onSelect: (id: string) => void;
   onToggle: (id: string) => void;
-  setRef: (id: string, el: HTMLDivElement | null) => void;
 }
 
 const EntryRow = memo(function EntryRow({
@@ -73,15 +73,7 @@ const EntryRow = memo(function EntryRow({
   isChecked,
   onSelect,
   onToggle,
-  setRef,
 }: EntryRowProps) {
-  const handleRef = useCallback(
-    (el: HTMLDivElement | null) => {
-      setRef(entry.id, el);
-    },
-    [entry.id, setRef],
-  );
-
   const handleSelect = useCallback(() => {
     onSelect(entry.id);
   }, [entry.id, onSelect]);
@@ -96,9 +88,7 @@ const EntryRow = memo(function EntryRow({
 
   return (
     <div
-      ref={handleRef}
-      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 60px' }}
-      className={`flex cursor-pointer items-start gap-2.5 px-3 py-2 transition-colors hover:bg-muted/50 ${
+      className={`flex cursor-pointer items-start gap-2.5 px-3 py-2 h-17.5 transition-colors hover:bg-muted/50 ${
         isSelected ? 'bg-muted/60 border-l-2 border-l-primary' : 'border-l-2 border-l-transparent'
       }`}
       onClick={handleSelect}
@@ -131,24 +121,32 @@ const EntryRow = memo(function EntryRow({
     </div>
   );
 });
-
 export function EntryList() {
   const { state, dispatch, filteredEntries } = usePoStore();
-  const listRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const parentRef = useRef<HTMLDivElement>(null);
   const filteredEntriesRef = useRef(filteredEntries);
   useEffect(() => {
     filteredEntriesRef.current = filteredEntries;
   }, [filteredEntries]);
   const [, startTransition] = useTransition();
+  const getItemKey = useCallback((index: number) => filteredEntries[index].id, [filteredEntries]);
 
-  const setItemRef = useCallback((id: string, el: HTMLDivElement | null) => {
-    if (el) {
-      itemRefs.current.set(id, el);
-    } else {
-      itemRefs.current.delete(id);
-    }
-  }, []);
+  const virtualizer = useVirtualizer({
+    count: filteredEntries.length,
+    getScrollElement: () => parentRef.current,
+    getItemKey,
+    estimateSize: () => 71,
+    overscan: 5,
+  });
+
+  const allFilteredSelected =
+    filteredEntries.length > 0 && filteredEntries.every((e) => state.selectedEntryIds.has(e.id));
+
+  const allOfStatusSelected = (status: FilterType) => {
+    if (!state.file) return false;
+    const matching = state.file.entries.filter((e) => statusMatch(e, status));
+    return matching.length > 0 && matching.every((e) => state.selectedEntryIds.has(e.id));
+  };
 
   const onSelect = useCallback(
     (id: string) => {
@@ -183,17 +181,13 @@ export function EntryList() {
       if (e.key === 'ArrowDown' || e.key === 'j') {
         e.preventDefault();
         const nextIndex = Math.min(currentIndex + 1, entries.length - 1);
-        const nextEntry = entries[nextIndex];
-        dispatch({ type: 'SELECT_ENTRY', payload: nextEntry.id });
-        const el = itemRefs.current.get(nextEntry.id);
-        el?.scrollIntoView({ block: 'nearest' });
+        dispatch({ type: 'SELECT_ENTRY', payload: entries[nextIndex].id });
+        virtualizer.scrollToIndex(nextIndex, { align: 'auto' });
       } else if (e.key === 'ArrowUp' || e.key === 'k') {
         e.preventDefault();
         const prevIndex = Math.max(currentIndex - 1, 0);
-        const prevEntry = entries[prevIndex];
-        dispatch({ type: 'SELECT_ENTRY', payload: prevEntry.id });
-        const el = itemRefs.current.get(prevEntry.id);
-        el?.scrollIntoView({ block: 'nearest' });
+        dispatch({ type: 'SELECT_ENTRY', payload: entries[prevIndex].id });
+        virtualizer.scrollToIndex(prevIndex, { align: 'auto' });
       }
     };
 
@@ -201,9 +195,11 @@ export function EntryList() {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [state.selectedEntryId, dispatch]);
+  }, [state.selectedEntryId, dispatch, virtualizer]);
 
   if (!state.file) return null;
+
+  const virtualItems = virtualizer.getVirtualItems();
 
   return (
     <div className="flex h-full flex-col">
@@ -215,7 +211,7 @@ export function EntryList() {
             dispatch({ type: 'SET_FILTER', payload: value as FilterType });
           }}
         >
-          <SelectTrigger className="h-7 w-[130px] text-xs">
+          <SelectTrigger className="h-7 w-32.5 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -247,23 +243,36 @@ export function EntryList() {
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="xs"
             onClick={() => {
-              dispatch({ type: 'SELECT_ALL' });
+              dispatch(allFilteredSelected ? { type: 'DESELECT_ALL' } : { type: 'SELECT_ALL' });
             }}
-            title="Select all"
+            title={allFilteredSelected ? 'Deselect all' : 'Select all'}
           >
-            <CheckSquare />
+            {allFilteredSelected ? <MinusSquare /> : <CheckSquare />}
+            <span>{allFilteredSelected ? 'Deselect' : 'Select all'}</span>
           </Button>
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="xs"
             onClick={() => {
-              dispatch({ type: 'DESELECT_ALL' });
+              dispatch({ type: 'SELECT_BY_STATUS', payload: 'untranslated' });
             }}
-            title="Deselect all"
+            title="Select untranslated"
           >
-            <Square />
+            {allOfStatusSelected('untranslated') ? <CheckSquare /> : <Square />}
+            <span>Untranslated</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => {
+              dispatch({ type: 'SELECT_BY_STATUS', payload: 'fuzzy' });
+            }}
+            title="Select fuzzy"
+          >
+            {allOfStatusSelected('fuzzy') ? <CheckSquare /> : <Square />}
+            <span>Fuzzy</span>
           </Button>
         </div>
         <div className="text-muted-foreground flex items-center gap-2 text-[11px]">
@@ -280,21 +289,32 @@ export function EntryList() {
       </div>
 
       {/* Entry list */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-gutter-stable scrollbar-thumb-border scrollbar-track-transparent">
-        <div ref={listRef} className="divide-y">
+      <div
+        ref={parentRef}
+        className="flex-1 overflow-y-auto scrollbar-thin scrollbar-gutter-stable scrollbar-thumb-border scrollbar-track-transparent"
+      >
+        <div className="relative w-full divide-y" style={{ height: virtualizer.getTotalSize() }}>
           {filteredEntries.length === 0
             ? NO_ENTRIES_MESSAGE
-            : filteredEntries.map((entry) => (
-                <EntryRow
-                  key={entry.id}
-                  entry={entry}
-                  isSelected={state.selectedEntryId === entry.id}
-                  isChecked={state.selectedEntryIds.has(entry.id)}
-                  onSelect={onSelect}
-                  onToggle={onToggle}
-                  setRef={setItemRef}
-                />
-              ))}
+            : virtualItems.map((virtualRow) => {
+                const entry = filteredEntries[virtualRow.index];
+                return (
+                  <div
+                    key={virtualRow.key}
+                    data-index={virtualRow.index}
+                    className="absolute left-0 top-0 w-full"
+                    style={{ transform: 'translateY(' + String(virtualRow.start) + 'px)' }}
+                  >
+                    <EntryRow
+                      entry={entry}
+                      isSelected={state.selectedEntryId === entry.id}
+                      isChecked={state.selectedEntryIds.has(entry.id)}
+                      onSelect={onSelect}
+                      onToggle={onToggle}
+                    />
+                  </div>
+                );
+              })}
         </div>
       </div>
     </div>
