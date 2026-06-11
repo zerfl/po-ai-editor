@@ -75,27 +75,38 @@ const EntryRow = memo(function EntryRow({
   onToggle,
   setRef,
 }: EntryRowProps) {
+  const handleRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      setRef(entry.id, el);
+    },
+    [entry.id, setRef],
+  );
+
+  const handleSelect = useCallback(() => {
+    onSelect(entry.id);
+  }, [entry.id, onSelect]);
+
+  const handleToggle = useCallback(() => {
+    onToggle(entry.id);
+  }, [entry.id, onToggle]);
+
+  const handleCheckboxClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+
   return (
     <div
-      ref={(el) => {
-        setRef(entry.id, el);
-      }}
+      ref={handleRef}
       style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 60px' }}
       className={`flex cursor-pointer items-start gap-2.5 px-3 py-2 transition-colors hover:bg-muted/50 ${
         isSelected ? 'bg-muted/60 border-l-2 border-l-primary' : 'border-l-2 border-l-transparent'
       }`}
-      onClick={() => {
-        onSelect(entry.id);
-      }}
+      onClick={handleSelect}
     >
       <Checkbox
         checked={isChecked}
-        onCheckedChange={() => {
-          onToggle(entry.id);
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
+        onCheckedChange={handleToggle}
+        onClick={handleCheckboxClick}
         className="mt-0.5"
       />
       <div className="min-w-0 flex-1">
