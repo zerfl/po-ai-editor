@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
-import { usePoStore } from './usePoStore';
+import { selectLoadFile, usePoStore } from './store';
 import { parseFile } from '@/api/client';
 import { toast } from 'sonner';
 import { Upload, FileText, Loader2 } from 'lucide-react';
 
 export function PoLoader() {
-  const { dispatch } = usePoStore();
+  const loadFile = usePoStore(selectLoadFile);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -15,7 +15,7 @@ export function PoLoader() {
       try {
         const content = await file.text();
         const result = await parseFile(content, file.name);
-        dispatch({ type: 'LOAD_FILE', payload: result });
+        loadFile(result);
         toast.success(`Loaded ${String(result.entries.length)} entries from ${file.name}`);
       } catch (error) {
         toast.error(
@@ -25,7 +25,7 @@ export function PoLoader() {
         setIsLoading(false);
       }
     },
-    [dispatch],
+    [loadFile],
   );
 
   const handleDrop = useCallback(

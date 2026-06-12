@@ -1,4 +1,4 @@
-import { usePoStore } from '../po/usePoStore';
+import { selectHasFile, usePoStore, usePoStoreApi, toPoFile } from '../po/store';
 import { exportPo, exportMo } from '@/api/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -6,13 +6,15 @@ import { Label } from '@/components/ui/label';
 import { FileDown, FileCode } from 'lucide-react';
 
 export function ExportButtons() {
-  const { state } = usePoStore();
+  const hasFile = usePoStore(selectHasFile);
+  const store = usePoStoreApi();
 
-  if (!state.file) return null;
-
-  const file = state.file;
+  if (!hasFile) return null;
 
   const handleExportPo = async () => {
+    const file = toPoFile(store.getState());
+    if (!file) return;
+
     try {
       const blob = await exportPo({
         entries: file.entries,
@@ -31,6 +33,9 @@ export function ExportButtons() {
   };
 
   const handleExportMo = async () => {
+    const file = toPoFile(store.getState());
+    if (!file) return;
+
     try {
       const blob = await exportMo({
         entries: file.entries,

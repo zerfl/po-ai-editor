@@ -1,38 +1,47 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
-import { usePoStore } from '../po/usePoStore';
+import { usePoStoreApi } from '../po/store';
 import { parseFile } from '@/api/client';
 import { toast } from 'sonner';
 import { Upload, GitMerge, Loader2 } from 'lucide-react';
 
 export function PotLoader() {
-  const { state, dispatch } = usePoStore();
+  const store = usePoStoreApi();
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const fileRef = useRef(state.file);
+  const fileRef = useRef(store.getState().document);
+
   useEffect(() => {
-    fileRef.current = state.file;
-  }, [state.file]);
+    const unsubscribe = store.subscribe((state) => {
+      fileRef.current = state.document;
+    });
+
+    return unsubscribe;
+  }, [store]);
 
   const handleFile = useCallback(
     async (file: File) => {
-      const currentFile = fileRef.current;
-      if (!currentFile) return;
+      const currentDocument = fileRef.current;
+      if (!currentDocument) return;
+
       setIsLoading(true);
       try {
         const content = await file.text();
         const result = await parseFile(content, file.name);
 
-        const existingMsgids = new Set(currentFile.entries.map((e) => e.msgid));
+        const existingEntries = currentDocument.entryOrder.map(
+          (id) => currentDocument.entriesById[id],
+        );
+        const existingMsgids = new Set(existingEntries.map((entry) => entry.msgid));
         const potMsgids = new Set(result.entries.map((e) => e.msgid));
 
         const added = result.entries.filter((e) => !existingMsgids.has(e.msgid)).length;
-        const removed = currentFile.entries.filter((e) => !potMsgids.has(e.msgid)).length;
+        const removed = existingEntries.filter((entry) => !potMsgids.has(entry.msgid)).length;
 
         const parts: string[] = [];
         if (added > 0) parts.push(`${String(added)} new`);
         if (removed > 0) parts.push(`${String(removed)} removed`);
 
-        dispatch({ type: 'MERGE_ENTRIES', payload: result });
+        store.getState().mergeEntries(result);
 
         const summary = parts.length > 0 ? parts.join(', ') : 'no changes';
         toast.success(`Updated from ${file.name}: ${summary}`);
@@ -44,7 +53,7 @@ export function PotLoader() {
         setIsLoading(false);
       }
     },
-    [dispatch],
+    [store],
   );
 
   const handleDrop = useCallback(

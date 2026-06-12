@@ -1,7 +1,13 @@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useEffect, useMemo, useState } from 'react';
-import { usePoStore } from './usePoStore';
+import { useEffect, useState } from 'react';
+import {
+  getEntryById,
+  selectSelectedEntryId,
+  selectUpdateEntry,
+  selectUpdateEntryPlural,
+  usePoStore,
+} from './store';
 
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -16,16 +22,15 @@ const NO_ENTRY_SELECTED = (
 );
 
 export function EntryEditor() {
-  const { state, dispatch } = usePoStore();
+  const selectedEntryId = usePoStore(selectSelectedEntryId);
+  const entry = usePoStore((state) =>
+    selectedEntryId ? getEntryById(state, selectedEntryId) : undefined,
+  );
+  const updateEntry = usePoStore(selectUpdateEntry);
+  const updateEntryPlural = usePoStore(selectUpdateEntryPlural);
   const [msgstr, setMsgstr] = useState('');
   const [pluralMsgstrs, setPluralMsgstrs] = useState<string[]>([]);
   const [saved, setSaved] = useState(true);
-
-  const entryMap = useMemo(
-    () => new Map(state.file?.entries.map((e) => [e.id, e]) ?? []),
-    [state.file?.entries],
-  );
-  const entry = state.selectedEntryId ? entryMap.get(state.selectedEntryId) : undefined;
 
   useEffect(() => {
     if (entry) {
@@ -43,16 +48,10 @@ export function EntryEditor() {
   const handleSave = () => {
     if (entry.msgidPlural) {
       pluralMsgstrs.forEach((str, i) => {
-        dispatch({
-          type: 'UPDATE_ENTRY_PLURAL',
-          payload: { id: entry.id, index: i, msgstr: str },
-        });
+        updateEntryPlural({ id: entry.id, index: i, msgstr: str });
       });
     } else {
-      dispatch({
-        type: 'UPDATE_ENTRY',
-        payload: { id: entry.id, msgstr },
-      });
+      updateEntry({ id: entry.id, msgstr });
     }
     setSaved(true);
   };

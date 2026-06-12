@@ -1,7 +1,14 @@
 import { useState, lazy, Suspense } from 'react';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { PoProvider, usePoStore } from './features/po/usePoStore';
+import {
+  PoProvider,
+  usePoStore,
+  selectEntryCount,
+  selectFilename,
+  selectHasFile,
+  selectResetFile,
+} from './features/po/store';
 import { PoLoader } from './features/po/PoLoader';
 import { EntryList } from './features/po/EntryList';
 import { EntryEditor } from './features/po/EntryEditor';
@@ -26,7 +33,10 @@ const PotLoader = lazy(() =>
 );
 
 function AppContent() {
-  const { state, dispatch } = usePoStore();
+  const hasFile = usePoStore(selectHasFile);
+  const filename = usePoStore(selectFilename);
+  const entryCount = usePoStore(selectEntryCount);
+  const resetFile = usePoStore(selectResetFile);
   const [glossary, setGlossary] = useState<Glossary>([]);
 
   return (
@@ -35,32 +45,25 @@ function AppContent() {
       <header className="flex h-10 shrink-0 items-center justify-between border-b px-3">
         <div className="flex items-center gap-2">
           <h1 className="text-xs font-semibold tracking-tight">PO AI Editor</h1>
-          {state.file && (
+          {hasFile && filename && (
             <>
               <span className="text-muted-foreground text-xs">/</span>
-              <span className="text-muted-foreground text-xs">{state.file.filename}</span>
+              <span className="text-muted-foreground text-xs">{filename}</span>
               <Badge variant="secondary" className="h-5 text-[10px]">
-                {state.file.entries.length}
+                {entryCount}
               </Badge>
             </>
           )}
         </div>
-        {state.file && (
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => {
-              dispatch({ type: 'RESET_FILE' });
-            }}
-            title="Close file"
-          >
+        {hasFile && (
+          <Button variant="ghost" size="icon-xs" onClick={resetFile} title="Close file">
             <X />
           </Button>
         )}
       </header>
 
       {/* Main content */}
-      {!state.file ? (
+      {!hasFile ? (
         <div className="flex flex-1 items-center justify-center">
           <PoLoader />
         </div>
