@@ -37,6 +37,7 @@ export const testPoFile: PoFile = {
       msgstr: 'Aenderungen speichern',
       msgstrPlural: [],
       comments: {
+        translator: 'CTA label',
         extracted: 'Primary button',
         reference: 'src/components/save.tsx:12',
       },
@@ -112,6 +113,8 @@ export const mergePotFile: PoFile = {
       msgstrPlural: [],
       comments: {
         extracted: 'Updated primary button label',
+        reference: 'src/components/save.tsx:99',
+        flag: 'php-format',
       },
       isFuzzy: false,
       isObsolete: false,

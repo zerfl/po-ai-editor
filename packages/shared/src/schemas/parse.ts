@@ -10,6 +10,7 @@ export const PoCommentSchema = z.object({
   extracted: z.string().optional(),
   reference: z.string().optional(),
   flag: z.string().optional(),
+  previous: z.string().optional(),
 });
 
 export const PoEntrySchema = z.object({

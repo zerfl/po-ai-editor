@@ -1,8 +1,36 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
-import { usePoStoreApi } from '../po/store';
+import { type PoDocument, usePoStoreApi } from '../po/store';
 import { parseFile } from '@/api/client';
+import { getPoEntryKey, type PoEntry, type PoFile } from '@po-ai-editor/shared';
 import { toast } from 'sonner';
 import { Upload, GitMerge, Loader2 } from 'lucide-react';
+
+function isHeaderEntry(msgctxt: string | null, msgid: string): boolean {
+  return msgctxt === null && msgid === '';
+}
+
+function isActiveCatalogEntry(entry: PoEntry): boolean {
+  return !entry.isObsolete && !isHeaderEntry(entry.msgctxt, entry.msgid);
+}
+
+export function summarizePotMergeChanges(
+  currentDocument: PoDocument,
+  incomingFile: PoFile,
+): { added: number; removed: number } {
+  const existingEntries = currentDocument.entryOrder
+    .map((id) => currentDocument.entriesById[id])
+    .filter(isActiveCatalogEntry);
+  const potEntries = incomingFile.entries.filter(
+    (entry) => !isHeaderEntry(entry.msgctxt, entry.msgid),
+  );
+  const existingKeys = new Set(existingEntries.map((entry) => getPoEntryKey(entry)));
+  const potKeys = new Set(potEntries.map((entry) => getPoEntryKey(entry)));
+
+  return {
+    added: potEntries.filter((entry) => !existingKeys.has(getPoEntryKey(entry))).length,
+    removed: existingEntries.filter((entry) => !potKeys.has(getPoEntryKey(entry))).length,
+  };
+}
 
 export function PotLoader() {
   const store = usePoStoreApi();
@@ -27,15 +55,7 @@ export function PotLoader() {
       try {
         const content = await file.text();
         const result = await parseFile(content, file.name);
-
-        const existingEntries = currentDocument.entryOrder.map(
-          (id) => currentDocument.entriesById[id],
-        );
-        const existingMsgids = new Set(existingEntries.map((entry) => entry.msgid));
-        const potMsgids = new Set(result.entries.map((e) => e.msgid));
-
-        const added = result.entries.filter((e) => !existingMsgids.has(e.msgid)).length;
-        const removed = existingEntries.filter((entry) => !potMsgids.has(entry.msgid)).length;
+        const { added, removed } = summarizePotMergeChanges(currentDocument, result);
 
         const parts: string[] = [];
         if (added > 0) parts.push(`${String(added)} new`);

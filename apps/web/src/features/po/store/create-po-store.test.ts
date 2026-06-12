@@ -84,11 +84,125 @@ describe('createPoStore', () => {
     expect(getEntryById(state, 'entry-save')?.comments.extracted).toBe(
       'Updated primary button label',
     );
+    expect(getEntryById(state, 'entry-save')?.comments.reference).toBe(
+      'src/components/save.tsx:99',
+    );
+    expect(getEntryById(state, 'entry-save')?.comments.translator).toBe('CTA label');
+    expect(getEntryById(state, 'entry-save')?.comments.flag).toBe('php-format');
     expect(getEntryById(state, 'incoming-new')?.msgstr).toBe('');
     expect(getEntryById(state, 'incoming-new')?.isTranslated).toBe(false);
     expect(getEntryById(state, 'entry-archive')?.isObsolete).toBe(true);
     expect(getEntryById(state, 'entry-files')?.isObsolete).toBe(true);
     expect(getEntryById(state, 'entry-legacy')?.isObsolete).toBe(true);
+  });
+
+  it('merges entries by logical key instead of raw msgid so contexts stay distinct', () => {
+    const store = createPoStore();
+    store.getState().loadFile({
+      filename: 'messages.po',
+      metadata: testPoFile.metadata,
+      entries: [
+        {
+          id: 'button-post',
+          msgctxt: 'button',
+          msgid: 'Post',
+          msgidPlural: null,
+          msgstr: 'Senden',
+          msgstrPlural: [],
+          comments: { reference: 'old-button.php:1' },
+          isFuzzy: false,
+          isObsolete: false,
+          isTranslated: true,
+        },
+        {
+          id: 'noun-post',
+          msgctxt: 'noun',
+          msgid: 'Post',
+          msgidPlural: null,
+          msgstr: 'Beitrag',
+          msgstrPlural: [],
+          comments: { reference: 'old-noun.php:2' },
+          isFuzzy: false,
+          isObsolete: false,
+          isTranslated: true,
+        },
+      ],
+    });
+
+    store.getState().mergeEntries({
+      filename: 'messages.pot',
+      metadata: testPoFile.metadata,
+      entries: [
+        {
+          id: 'incoming-button',
+          msgctxt: 'button',
+          msgid: 'Post',
+          msgidPlural: null,
+          msgstr: '',
+          msgstrPlural: [],
+          comments: { reference: 'new-button.php:10' },
+          isFuzzy: false,
+          isObsolete: false,
+          isTranslated: false,
+        },
+        {
+          id: 'incoming-noun',
+          msgctxt: 'noun',
+          msgid: 'Post',
+          msgidPlural: null,
+          msgstr: '',
+          msgstrPlural: [],
+          comments: { reference: 'new-noun.php:20' },
+          isFuzzy: false,
+          isObsolete: false,
+          isTranslated: false,
+        },
+      ],
+    });
+
+    const state = store.getState();
+    expect(state.document?.entryOrder).toEqual(['button-post', 'noun-post']);
+    expect(getEntryById(state, 'button-post')?.msgstr).toBe('Senden');
+    expect(getEntryById(state, 'button-post')?.comments.reference).toBe('new-button.php:10');
+    expect(getEntryById(state, 'noun-post')?.msgstr).toBe('Beitrag');
+    expect(getEntryById(state, 'noun-post')?.comments.reference).toBe('new-noun.php:20');
+  });
+
+  it('rejects malformed documents with duplicate active logical keys', () => {
+    const store = createPoStore();
+
+    expect(() =>
+      store.getState().loadFile({
+        filename: 'invalid.po',
+        metadata: testPoFile.metadata,
+        entries: [
+          {
+            id: 'dup-1',
+            msgctxt: null,
+            msgid: 'Hello',
+            msgidPlural: null,
+            msgstr: 'Hallo',
+            msgstrPlural: [],
+            comments: {},
+            isFuzzy: false,
+            isObsolete: false,
+            isTranslated: true,
+          },
+          {
+            id: 'dup-2',
+            msgctxt: null,
+            msgid: 'Hello',
+            msgidPlural: null,
+            msgstr: 'Servus',
+            msgstrPlural: [],
+            comments: {},
+            isFuzzy: false,
+            isObsolete: false,
+            isTranslated: true,
+          },
+        ],
+      }),
+    ).toThrow(/duplicate logical entry/);
   });
 
   it('resets document and query state back to initial values', () => {

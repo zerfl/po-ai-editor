@@ -4,14 +4,48 @@ import type { PoFile } from '@po-ai-editor/shared';
 import type { TranslateRequest, TranslateResponse } from '@po-ai-editor/shared';
 import type { ExportRequest } from '@po-ai-editor/shared';
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code?: string;
+  readonly details?: unknown;
+
+  constructor(message: string, status: number, options?: { code?: string; details?: unknown }) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = options?.code;
+    this.details = options?.details;
+  }
+}
+
+async function readApiError(response: Response): Promise<ApiError> {
+  const raw = await response.text();
+
+  try {
+    const payload: unknown = JSON.parse(raw);
+    if (typeof payload === 'object' && payload !== null) {
+      const message =
+        'error' in payload && typeof payload.error === 'string'
+          ? payload.error
+          : `API error ${String(response.status)}`;
+      const code = 'code' in payload && typeof payload.code === 'string' ? payload.code : undefined;
+      const details = 'details' in payload ? payload.details : undefined;
+      return new ApiError(message, response.status, { code, details });
+    }
+  } catch {
+    // Fall back to the raw response body below.
+  }
+
+  return new ApiError(raw || `API error ${String(response.status)}`, response.status);
+}
+
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
   if (!res.ok) {
-    const error = await res.text();
-    throw new Error(`API error ${String(res.status)}: ${error}`);
+    throw await readApiError(res);
   }
   return res.json() as Promise<T>;
 }
@@ -47,7 +81,7 @@ export async function exportPo(request: ExportRequest): Promise<Blob> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
-  if (!res.ok) throw new Error(`Export failed: ${String(res.status)}`);
+  if (!res.ok) throw await readApiError(res);
   return res.blob();
 }
 
@@ -57,6 +91,6 @@ export async function exportMo(request: ExportRequest): Promise<Blob> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
   });
-  if (!res.ok) throw new Error(`Export failed: ${String(res.status)}`);
+  if (!res.ok) throw await readApiError(res);
   return res.blob();
 }

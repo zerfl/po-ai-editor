@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { parsePo, parsePot } from '../services/po-parser.js';
+import { isPoCatalogError } from '../services/po-errors.js';
 
 const ParseRequestSchema = z.object({
   content: z.string().min(1),
@@ -24,6 +25,10 @@ parseRoute.post('/parse', async (c) => {
 
     return c.json(poFile);
   } catch (error) {
+    if (isPoCatalogError(error)) {
+      return c.json({ error: error.message, code: error.code, details: error.details }, 400);
+    }
+
     console.error('Parse error:', error);
     return c.json({ error: 'Failed to parse file' }, 500);
   }

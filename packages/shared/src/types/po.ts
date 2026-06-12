@@ -3,6 +3,7 @@ export interface PoComment {
   extracted?: string;
   reference?: string;
   flag?: string;
+  previous?: string;
 }
 
 export interface PoEntry {

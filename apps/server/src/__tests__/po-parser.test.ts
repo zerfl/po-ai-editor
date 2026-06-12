@@ -1,153 +1,137 @@
-import { describe, it, expect } from 'vitest';
-import { parsePo } from '../services/po-parser';
-
-const samplePo = `# Test PO file
-msgid ""
-msgstr ""
-"Project-Id-Version: test\\n"
-"Language: de\\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\\n"
-
-msgid "Hello"
-msgstr "Hallo"
-
-#. This is a comment
-#: src/main.ts:42
-#, fuzzy
-msgid "Fuzzy entry"
-msgstr "Unscharfer Eintrag"
-`;
-
-const samplePoObsolete = `# Test PO file with obsolete entries
-msgid ""
-msgstr ""
-"Project-Id-Version: test\\n"
-"Language: de\\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\\n"
-
-msgid "Active entry"
-msgstr "Aktiver Eintrag"
-
-#, fuzzy
-#~| msgid "Widget enabled"
-#~ msgid "Widget Einstellungen"
-#~ msgstr "Widget aktiviert"
-`;
+import { describe, expect, it } from 'vitest';
+import { parsePo, parsePot } from '../services/po-parser';
+import { PoCatalogError } from '../services/po-errors';
+import { readFixture } from './po-test-helpers';
 
 describe('po-parser', () => {
-  it('should parse a PO file', () => {
-    const result = parsePo(samplePo, 'test.po');
-    expect(result.filename).toBe('test.po');
-    expect(result.metadata.language).toBe('de');
-    expect(result.entries.length).toBeGreaterThan(0);
+  it('parses metadata, active entries, and repeated references from a real fixture', () => {
+    const result = parsePo(readFixture('wordpress-valid.po'), 'wordpress-valid.po');
+
+    expect(result.filename).toBe('wordpress-valid.po');
+    expect(result.metadata.language).toBe('de_DE');
+    expect(result.metadata.projectVersion).toBe('Acme Starter 2.0');
+    expect(result.metadata.extraHeaders?.['MIME-Version']).toBe('1.0');
+    expect(result.metadata.extraHeaders?.['X-Domain']).toBe('acme-starter');
+
+    const headerEntry = result.entries.find(
+      (entry) => entry.msgctxt === null && entry.msgid === '',
+    );
+    expect(headerEntry).toBeDefined();
+
+    const displayMode = result.entries.find((entry) => entry.msgid === 'Display Mode');
+    expect(displayMode?.comments.reference).toBe(
+      'inc/Modules/Display_Condition.php:24\ninc/Widgets/Calendar_Widget.php:320',
+    );
   });
 
-  it('should parse simple entries', () => {
-    const result = parsePo(samplePo, 'test.po');
-    const hello = result.entries.find((e) => e.msgid === 'Hello');
-    expect(hello).toBeDefined();
-    expect(hello?.msgstr).toBe('Hallo');
-    expect(hello?.isTranslated).toBe(true);
+  it('preserves obsolete entries and previous-message history from #~| syntax', () => {
+    const result = parsePo(readFixture('obsolete-history.po'), 'obsolete-history.po');
+
+    const obsolete = result.entries.find((entry) => entry.isObsolete);
+    expect(obsolete).toBeDefined();
+    expect(obsolete?.msgid).toBe('Widget Einstellungen');
+    expect(obsolete?.msgstr).toBe('Widget aktiviert');
+    expect(obsolete?.isFuzzy).toBe(true);
+    expect(obsolete?.comments.previous).toBe('msgid "Widget enabled"');
   });
 
-  it('should parse fuzzy entries', () => {
-    const result = parsePo(samplePo, 'test.po');
-    const fuzzy = result.entries.find((e) => e.msgid === 'Fuzzy entry');
-    expect(fuzzy).toBeDefined();
-    expect(fuzzy?.isFuzzy).toBe(true);
+  it('preserves explicit empty context distinctly from no context', () => {
+    const result = parsePo(readFixture('empty-context.po'), 'empty-context.po');
+
+    const entries = result.entries.filter((entry) => entry.msgid === 'Status');
+    expect(entries).toHaveLength(2);
+    expect(entries.find((entry) => entry.msgctxt === null)?.msgstr).toBe('Status');
+    expect(entries.find((entry) => entry.msgctxt === '')?.msgstr).toBe('Leerer Kontext');
   });
 
-  it('should parse comments', () => {
-    const result = parsePo(samplePo, 'test.po');
-    const fuzzy = result.entries.find((e) => e.msgid === 'Fuzzy entry');
-    expect(fuzzy?.comments.extracted).toBe('This is a comment');
-    expect(fuzzy?.comments.reference).toBe('src/main.ts:42');
-  });
-
-  it('should handle obsolete entries with previous context (#~|)', () => {
-    const result = parsePo(samplePoObsolete, 'test.po');
-    expect(result.filename).toBe('test.po');
-    expect(result.metadata.language).toBe('de');
-    const active = result.entries.find((e) => e.msgid === 'Active entry');
-    expect(active).toBeDefined();
-    expect(active?.msgstr).toBe('Aktiver Eintrag');
-  });
-
-  describe('unknown headers', () => {
-    it('should capture MIME-Version in extraHeaders', () => {
-      const po = `msgid ""
+  it('preserves literal backslash escapes instead of unescaping them twice', () => {
+    const po = `msgid ""
 msgstr ""
 "Project-Id-Version: test\\n"
+"PO-Revision-Date: 2026-06-01 10:00+0000\\n"
+"Last-Translator: Jane Doe <jane@example.com>\\n"
+"Language-Team: German Team\\n"
 "Language: de\\n"
-"Content-Type: text/plain; charset=UTF-8\\n"
-"Content-Transfer-Encoding: 8bit\\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\\n"
 "MIME-Version: 1.0\\n"
-
-msgid "Hello"
-msgstr "Hallo"
-`;
-      const result = parsePo(po, 'test.po');
-      expect(result.metadata.extraHeaders?.['MIME-Version']).toBe('1.0');
-    });
-
-    it('should capture X-Domain in extraHeaders', () => {
-      const po = `msgid ""
-msgstr ""
-"Project-Id-Version: test\\n"
-"Language: de\\n"
 "Content-Type: text/plain; charset=UTF-8\\n"
 "Content-Transfer-Encoding: 8bit\\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\\n"
-"X-Domain: acme-starter\\n"
 
-msgid "Hello"
-msgstr "Hallo"
+msgid "literal \\\\n sequence"
+msgstr "literal \\\\t tab"
 `;
-      const result = parsePo(po, 'test.po');
-      expect(result.metadata.extraHeaders?.['X-Domain']).toBe('acme-starter');
-    });
 
-    it('should not include known headers in extraHeaders', () => {
-      const po = `msgid ""
-msgstr ""
-"Project-Id-Version: test\\n"
-"Language: de\\n"
-"Content-Type: text/plain; charset=UTF-8\\n"
-"Content-Transfer-Encoding: 8bit\\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\\n"
-"MIME-Version: 1.0\\n"
+    const result = parsePo(po, 'literal.po');
+    const entry = result.entries.find((item) => item.msgid.startsWith('literal'));
 
-msgid "Hello"
-msgstr "Hallo"
-`;
-      const result = parsePo(po, 'test.po');
-      expect(result.metadata.extraHeaders?.['Language']).toBeUndefined();
-      expect(result.metadata.extraHeaders?.['Content-Type']).toBeUndefined();
-    });
-
-    it('should set extraHeaders to undefined when no unknown headers exist', () => {
-      const result = parsePo(samplePo, 'test.po');
-      expect(result.metadata.extraHeaders).toBeUndefined();
-    });
+    expect(entry?.msgid).toBe('literal \\n sequence');
+    expect(entry?.msgstr).toBe('literal \\t tab');
   });
 
-  describe('multi-reference comments', () => {
-    it('should join multiple reference lines with newlines', () => {
-      const po = `msgid ""
-msgstr ""
-"Project-Id-Version: test\\n"
-"Language: de\\n"
+  it('rejects duplicate active entries for the same logical key', () => {
+    expect(() => parsePo(readFixture('duplicate-active.po'), 'duplicate-active.po')).toThrowError(
+      PoCatalogError,
+    );
 
-#: file1.php:10
-#: file2.php:20
-#: file3.php:30
-msgid "Shared string"
-msgstr "Geteilter String"
+    try {
+      parsePo(readFixture('duplicate-active.po'), 'duplicate-active.po');
+    } catch (error) {
+      expect(error).toBeInstanceOf(PoCatalogError);
+      expect((error as PoCatalogError).code).toBe('invalid-po');
+    }
+  });
+
+  it('rejects active and obsolete twins for the same logical key', () => {
+    expect(() =>
+      parsePo(readFixture('active-obsolete-duplicate.po'), 'active-obsolete-duplicate.po'),
+    ).toThrowError(PoCatalogError);
+
+    try {
+      parsePo(readFixture('active-obsolete-duplicate.po'), 'active-obsolete-duplicate.po');
+    } catch (error) {
+      expect(error).toBeInstanceOf(PoCatalogError);
+      expect((error as PoCatalogError).code).toBe('active-obsolete-duplicate');
+    }
+  });
+
+  it('rejects invalid bare obsolete lines that do not form real PO entries', () => {
+    const po = '#~ Resend the actual WooCommerce processing email for a selected customer order.\n';
+
+    expect(() => parsePo(po, 'invalid-obsolete.po')).toThrowError(PoCatalogError);
+
+    try {
+      parsePo(po, 'invalid-obsolete.po');
+    } catch (error) {
+      expect(error).toBeInstanceOf(PoCatalogError);
+      expect((error as PoCatalogError).code).toBe('invalid-po');
+    }
+  });
+
+  it('parses WordPress make-pot plural entries even without PO plural-form validation', () => {
+    const pot = `msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\\n"
+"POT-Creation-Date: 2026-06-12 10:00+0000\\n"
+"MIME-Version: 1.0\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+#. translators: %d: remaining spot count.
+#: inc/Acme/Modules/OrderOverview.php:784
+#, php-format
+msgid "%d spot left"
+msgid_plural "%d spots left"
+msgstr[0] ""
+msgstr[1] ""
 `;
-      const result = parsePo(po, 'test.po');
-      const entry = result.entries.find((e) => e.msgid === 'Shared string');
-      expect(entry?.comments.reference).toBe('file1.php:10\nfile2.php:20\nfile3.php:30');
-    });
+
+    const result = parsePot(pot, 'acme-orders.pot');
+    const entry = result.entries.find((item) => item.msgid === '%d spot left');
+
+    expect(entry).toBeDefined();
+    expect(entry?.msgidPlural).toBe('%d spots left');
+    expect(entry?.msgstrPlural).toEqual(['', '']);
+    expect(entry?.comments.reference).toBe('inc/Acme/Modules/OrderOverview.php:784');
+    expect(entry?.comments.flag).toBe('php-format');
   });
 });

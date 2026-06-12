@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
+    "pretest": "pnpm --filter @po-ai-editor/shared build",
+    "pretest:po": "pnpm --filter @po-ai-editor/shared build",
     "test": "vitest run",
+    "test:po": "vitest run src/features/po/store/*.test.ts src/features/pot-merge/PotLoader.test.tsx",
     "preview": "vite preview",
     "lint": "eslint ."
   },

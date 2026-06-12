@@ -5,6 +5,7 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "test": "turbo test",
+    "test:po": "pnpm --filter @po-ai-editor/shared build && pnpm --filter @po-ai-editor/server test:po && pnpm --filter @po-ai-editor/web test:po",
     "lint": "turbo lint",
     "format": "prettier --write apps/ packages/",
     "format:check": "prettier --check apps/ packages/"

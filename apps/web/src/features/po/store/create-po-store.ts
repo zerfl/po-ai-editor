@@ -1,5 +1,12 @@
 import { createStore } from 'zustand/vanilla';
-import type { PoEntry, PoFile, PoMetadata } from '@po-ai-editor/shared';
+import {
+  getPoEntryKey,
+  joinFlagComment,
+  splitFlagComment,
+  type PoEntry,
+  type PoFile,
+  type PoMetadata,
+} from '@po-ai-editor/shared';
 import { getFilteredEntryIds, statusMatch } from './derive';
 
 export type PoFilter = 'all' | 'translated' | 'untranslated' | 'fuzzy' | 'obsolete';
@@ -45,7 +52,100 @@ const initialState: PoStoreState = {
   searchQuery: '',
 };
 
+function isHeaderEntry(entry: Pick<PoEntry, 'msgctxt' | 'msgid'>): boolean {
+  return entry.msgctxt === null && entry.msgid === '';
+}
+
+function deriveIsTranslated(entry: Pick<PoEntry, 'msgstr' | 'msgstrPlural'>): boolean {
+  return entry.msgstr.length > 0 || entry.msgstrPlural.some((value) => value.length > 0);
+}
+
+function pluralSlotCount(pluralForms: string): number {
+  const match = pluralForms.match(/nplurals\s*=\s*(\d+)/);
+  const count = Number(match?.[1] ?? '2');
+  return Number.isFinite(count) && count > 0 ? count : 2;
+}
+
+function emptyPluralTranslations(entry: Pick<PoEntry, 'msgidPlural' | 'msgstrPlural'>, metadata: PoMetadata) {
+  if (!entry.msgidPlural) return [];
+  const count = entry.msgstrPlural.length > 0 ? entry.msgstrPlural.length : pluralSlotCount(metadata.pluralForms);
+  return Array.from({ length: count }, () => '');
+}
+
+function sourceFlags(flag?: string): string[] {
+  return splitFlagComment(flag).filter((value) => value !== 'fuzzy');
+}
+
+function mergedSourceFlag(existing: PoEntry | null, incoming: PoEntry): string | undefined {
+  return joinFlagComment([
+    ...(existing?.isFuzzy ? ['fuzzy'] : []),
+    ...sourceFlags(incoming.comments.flag),
+  ]);
+}
+
+function sameComments(left: PoEntry['comments'], right: PoEntry['comments']): boolean {
+  return (
+    left.translator === right.translator &&
+    left.extracted === right.extracted &&
+    left.reference === right.reference &&
+    left.flag === right.flag &&
+    left.previous === right.previous
+  );
+}
+
+function duplicateEntryError(prefix: string, entry: PoEntry, duplicateId: string): Error {
+  return new Error(
+    `${prefix}: duplicate logical entry for msgid "${entry.msgid}" in context ${JSON.stringify(entry.msgctxt)} (${duplicateId}, ${entry.id})`,
+  );
+}
+
+function assertValidEntries(entries: PoEntry[], prefix: string): void {
+  const seenIds = new Set<string>();
+  const activeByKey = new Map<string, string>();
+  const obsoleteByKey = new Map<string, string>();
+
+  for (const entry of entries) {
+    if (seenIds.has(entry.id)) {
+      throw new Error(`${prefix}: duplicate entry id "${entry.id}"`);
+    }
+    seenIds.add(entry.id);
+
+    const key = getPoEntryKey(entry);
+    if (entry.isObsolete) {
+      const activeId = activeByKey.get(key);
+      if (activeId) {
+        throw new Error(
+          `${prefix}: active and obsolete entries share the same key for msgid "${entry.msgid}"`,
+        );
+      }
+
+      const duplicateId = obsoleteByKey.get(key);
+      if (duplicateId) {
+        throw duplicateEntryError(prefix, entry, duplicateId);
+      }
+
+      obsoleteByKey.set(key, entry.id);
+      continue;
+    }
+
+    const obsoleteId = obsoleteByKey.get(key);
+    if (obsoleteId) {
+      throw new Error(
+        `${prefix}: active and obsolete entries share the same key for msgid "${entry.msgid}"`,
+      );
+    }
+
+    const duplicateId = activeByKey.get(key);
+    if (duplicateId) {
+      throw duplicateEntryError(prefix, entry, duplicateId);
+    }
+
+    activeByKey.set(key, entry.id);
+  }
+}
+
 function normalizePoFile(file: PoFile): PoDocument {
+  assertValidEntries(file.entries, 'Loaded document');
   return {
     filename: file.filename,
     metadata: file.metadata,
@@ -64,13 +164,84 @@ function withDocument(
   return { document };
 }
 
-function sameComments(left: PoEntry['comments'], right: PoEntry['comments']) {
-  return (
-    left.translator === right.translator &&
-    left.extracted === right.extracted &&
-    left.reference === right.reference &&
-    left.flag === right.flag
-  );
+function mergeTemplateEntry(existing: PoEntry, incoming: PoEntry, metadata: PoMetadata): PoEntry {
+  const compatiblePluralShape =
+    existing.msgidPlural === incoming.msgidPlural &&
+    (incoming.msgidPlural === null || existing.msgstrPlural.length === emptyPluralTranslations(incoming, metadata).length);
+
+  if (!compatiblePluralShape) {
+    return {
+      ...incoming,
+      id: existing.id,
+      msgstr: '',
+      msgstrPlural: emptyPluralTranslations(incoming, metadata),
+      comments: {
+        translator: existing.comments.translator,
+        extracted: incoming.comments.extracted,
+        reference: incoming.comments.reference,
+        flag: mergedSourceFlag(existing, incoming),
+        previous: existing.comments.previous,
+      },
+      isFuzzy: existing.isFuzzy,
+      isObsolete: false,
+      isTranslated: false,
+    };
+  }
+
+  const msgstrPlural = existing.msgidPlural ? [...existing.msgstrPlural] : [];
+
+  const merged: PoEntry = {
+    ...existing,
+    msgctxt: incoming.msgctxt,
+    msgid: incoming.msgid,
+    msgidPlural: incoming.msgidPlural,
+    msgstrPlural,
+    comments: {
+      translator: existing.comments.translator,
+      extracted: incoming.comments.extracted,
+      reference: incoming.comments.reference,
+      flag: mergedSourceFlag(existing, incoming),
+      previous: existing.comments.previous,
+    },
+    isObsolete: false,
+    isTranslated: deriveIsTranslated({
+      msgstr: existing.msgstr,
+      msgstrPlural,
+    }),
+  };
+
+  if (
+    !existing.isObsolete &&
+    existing.msgctxt === merged.msgctxt &&
+    existing.msgid === merged.msgid &&
+    existing.msgidPlural === merged.msgidPlural &&
+    existing.msgstr === merged.msgstr &&
+    existing.isFuzzy === merged.isFuzzy &&
+    existing.isTranslated === merged.isTranslated &&
+    existing.msgstrPlural.length === merged.msgstrPlural.length &&
+    existing.msgstrPlural.every((value, index) => value === merged.msgstrPlural[index]) &&
+    sameComments(existing.comments, merged.comments)
+  ) {
+    return existing;
+  }
+
+  return merged;
+}
+
+function createNewTemplateEntry(incoming: PoEntry, metadata: PoMetadata): PoEntry {
+  const msgstrPlural = emptyPluralTranslations(incoming, metadata);
+  return {
+    ...incoming,
+    msgstr: '',
+    msgstrPlural,
+    comments: {
+      ...incoming.comments,
+      flag: joinFlagComment(sourceFlags(incoming.comments.flag)),
+    },
+    isFuzzy: false,
+    isObsolete: false,
+    isTranslated: false,
+  };
 }
 
 export function createPoStore() {
@@ -254,38 +425,50 @@ export function createPoStore() {
     mergeEntries: (file) => {
       set((state) => {
         const nextState = withDocument(state, (document) => {
-          const existingByMsgid = new Map(
-            document.entryOrder.map((id) => {
-              const entry = document.entriesById[id];
-              return [entry.msgid, entry] as const;
-            }),
-          );
+          const currentEntries = document.entryOrder.map((id) => document.entriesById[id]);
+          assertValidEntries(currentEntries, 'Current document');
 
-          const mergedEntries = file.entries.map((incomingEntry) => {
-            const existing = existingByMsgid.get(incomingEntry.msgid);
+          const incomingEntries = file.entries.filter((entry) => !isHeaderEntry(entry));
+          assertValidEntries(incomingEntries, 'Incoming POT');
+
+          const headerEntries = currentEntries.filter((entry) => isHeaderEntry(entry));
+          const activeByKey = new Map<string, PoEntry>();
+          const obsoleteByKey = new Map<string, PoEntry>();
+
+          for (const entry of currentEntries) {
+            if (isHeaderEntry(entry)) continue;
+            const key = getPoEntryKey(entry);
+            if (entry.isObsolete) {
+              obsoleteByKey.set(key, entry);
+            } else {
+              activeByKey.set(key, entry);
+            }
+          }
+
+          const mergedEntries = incomingEntries.map((incomingEntry) => {
+            const key = getPoEntryKey(incomingEntry);
+            const existing = activeByKey.get(key) ?? obsoleteByKey.get(key) ?? null;
+
             if (!existing) {
-              return { ...incomingEntry, msgstr: '', isTranslated: false };
+              return createNewTemplateEntry(incomingEntry, document.metadata);
             }
 
-            if (sameComments(existing.comments, incomingEntry.comments)) {
-              return existing;
-            }
-
-            return {
-              ...existing,
-              comments: incomingEntry.comments,
-            };
+            return mergeTemplateEntry(existing, incomingEntry, document.metadata);
           });
 
-          const nextMsgids = new Set(file.entries.map((entry) => entry.msgid));
-          const obsoleteEntries = document.entryOrder.flatMap((id) => {
-            const current = document.entriesById[id];
-            if (nextMsgids.has(current.msgid)) return [];
-            if (current.isObsolete) return [current];
-            return [{ ...current, isObsolete: true }];
+          const nextActiveKeys = new Set(mergedEntries.map((entry) => getPoEntryKey(entry)));
+          const obsoleteEntries = currentEntries.flatMap((entry) => {
+            if (isHeaderEntry(entry)) return [];
+
+            const key = getPoEntryKey(entry);
+            if (nextActiveKeys.has(key)) return [];
+            if (entry.isObsolete) return [entry];
+
+            return [{ ...entry, isObsolete: true }];
           });
 
-          const nextEntries = [...mergedEntries, ...obsoleteEntries];
+          const nextEntries = [...headerEntries, ...mergedEntries, ...obsoleteEntries];
+          assertValidEntries(nextEntries, 'Merged document');
           return {
             ...document,
             entryOrder: nextEntries.map((entry) => entry.id),

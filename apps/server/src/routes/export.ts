@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { serializePo, serializeMo } from '../services/po-serializer.js';
 import { PoEntrySchema, PoMetadataSchema } from '@po-ai-editor/shared';
+import { isPoCatalogError } from '../services/po-errors.js';
 
 const ExportRequestSchema = z.object({
   entries: z.array(PoEntrySchema),
@@ -26,6 +27,10 @@ exportRoute.post('/export/po', async (c) => {
     c.header('Content-Disposition', 'attachment; filename="translation.po"');
     return c.body(poContent);
   } catch (error) {
+    if (isPoCatalogError(error)) {
+      return c.json({ error: error.message, code: error.code, details: error.details }, 400);
+    }
+
     console.error('Export PO error:', error);
     return c.json({ error: 'Export failed' }, 500);
   }
@@ -47,6 +52,10 @@ exportRoute.post('/export/mo', async (c) => {
     c.header('Content-Disposition', 'attachment; filename="translation.mo"');
     return c.body(Uint8Array.from(moContent));
   } catch (error) {
+    if (isPoCatalogError(error)) {
+      return c.json({ error: error.message, code: error.code, details: error.details }, 400);
+    }
+
     console.error('Export MO error:', error);
     return c.json({ error: 'Export failed' }, 500);
   }

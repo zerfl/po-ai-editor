@@ -27,8 +27,8 @@ export function ExportButtons() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Exported .po file');
-    } catch {
-      toast.error('Export failed');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Export failed');
     }
   };
 
@@ -48,8 +48,8 @@ export function ExportButtons() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Generated .mo binary');
-    } catch {
-      toast.error('Export failed');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Export failed');
     }
   };
 

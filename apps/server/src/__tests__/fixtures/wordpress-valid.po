@@ -1,0 +1,25 @@
+# Copyright (C) 2026 Example Corp
+msgid ""
+msgstr ""
+"Project-Id-Version: Acme Starter 2.0\n"
+"Report-Msgid-Bugs-To: https://example.com/support\n"
+"POT-Creation-Date: 2026-01-15 10:30+0000\n"
+"PO-Revision-Date: 2026-02-20 14:00+0100\n"
+"Last-Translator: Jane Doe <jane@example.com>\n"
+"Language-Team: German Team\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Domain: acme-starter\n"
+
+#. Theme Name of the theme
+#: style.css
+msgid "Acme Starter"
+msgstr "Acme Starter"
+
+#: inc/Modules/Display_Condition.php:24
+#: inc/Widgets/Calendar_Widget.php:320
+msgid "Display Mode"
+msgstr "Anzeigemodus"
