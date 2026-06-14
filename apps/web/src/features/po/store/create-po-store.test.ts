@@ -41,6 +41,30 @@ describe('createPoStore', () => {
     expect(getEntryById(state, 'entry-files')).not.toBe(beforePlural);
   });
 
+  it('updates document language metadata for translation target and export', () => {
+    const store = createPoStore();
+    store.getState().loadFile(testPoFile);
+
+    store.getState().setLanguage('fr_FR');
+
+    const state = store.getState();
+    expect(state.document?.metadata.language).toBe('fr_FR');
+  });
+
+  it('preserves blank language metadata for targetless template files', () => {
+    const store = createPoStore();
+    store.getState().loadFile({
+      ...testPoFile,
+      filename: 'messages.pot',
+      metadata: {
+        ...testPoFile.metadata,
+        language: '',
+      },
+    });
+
+    expect(store.getState().document?.metadata.language).toBe('');
+  });
+
   it('supports selection helpers and suggestion application', () => {
     const store = createPoStore();
     store.getState().loadFile(testPoFile);
@@ -171,7 +195,7 @@ describe('createPoStore', () => {
   it('rejects malformed documents with duplicate active logical keys', () => {
     const store = createPoStore();
 
-    expect(() =>
+    expect(() => {
       store.getState().loadFile({
         filename: 'invalid.po',
         metadata: testPoFile.metadata,
@@ -201,8 +225,8 @@ describe('createPoStore', () => {
             isTranslated: true,
           },
         ],
-      }),
-    ).toThrow(/duplicate logical entry/);
+      });
+    }).toThrow(/duplicate logical entry/);
   });
 
   it('resets document and query state back to initial values', () => {

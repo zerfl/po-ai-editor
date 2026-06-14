@@ -9,7 +9,7 @@ export const testPoFile: PoFile = {
     poRevisionDate: '2026-06-11 12:00+0000',
     lastTranslator: 'Jane Translator',
     languageTeam: 'German Team',
-    language: 'English',
+    language: 'de_DE',
     contentType: 'text/plain; charset=UTF-8',
     contentTransferEncoding: '8bit',
     pluralForms: 'nplurals=2; plural=(n != 1);',

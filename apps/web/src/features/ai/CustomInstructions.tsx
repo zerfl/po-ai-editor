@@ -15,7 +15,7 @@ export function CustomInstructions({ value, onChange }: CustomInstructionsProps)
         onChange={(e) => {
           onChange(e.target.value);
         }}
-        placeholder="e.g., Use formal German, preserve brand names..."
+        placeholder="e.g., Use formal language, preserve brand names..."
         className="mt-1 text-xs min-h-[60px] resize-y"
       />
     </div>

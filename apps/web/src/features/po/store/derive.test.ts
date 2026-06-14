@@ -52,11 +52,12 @@ describe('po store derivations', () => {
     const store = createPoStore();
     store.getState().loadFile(testPoFile);
     store.getState().updateEntry({ id: 'entry-welcome', msgstr: 'Willkommen' });
+    store.getState().setLanguage('fr_FR');
 
     const file = toPoFile(store.getState());
 
     expect(file?.filename).toBe(testPoFile.filename);
-    expect(file?.metadata).toEqual(testPoFile.metadata);
+    expect(file?.metadata).toEqual({ ...testPoFile.metadata, language: 'fr_FR' });
     expect(file?.entries.map((entry) => entry.id)).toEqual(
       testPoFile.entries.map((entry) => entry.id),
     );

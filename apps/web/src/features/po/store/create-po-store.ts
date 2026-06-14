@@ -36,6 +36,7 @@ export interface PoStoreActions {
   selectByStatus: (status: PoFilter) => void;
   updateEntry: (payload: { id: string; msgstr: string }) => void;
   updateEntryPlural: (payload: { id: string; index: number; msgstr: string }) => void;
+  setLanguage: (language: string) => void;
   setFilter: (filter: PoFilter) => void;
   setSearchQuery: (query: string) => void;
   applySuggestions: (payload: Array<{ id: string; msgstr: string; plural?: string[] }>) => void;
@@ -66,9 +67,15 @@ function pluralSlotCount(pluralForms: string): number {
   return Number.isFinite(count) && count > 0 ? count : 2;
 }
 
-function emptyPluralTranslations(entry: Pick<PoEntry, 'msgidPlural' | 'msgstrPlural'>, metadata: PoMetadata) {
+function emptyPluralTranslations(
+  entry: Pick<PoEntry, 'msgidPlural' | 'msgstrPlural'>,
+  metadata: PoMetadata,
+) {
   if (!entry.msgidPlural) return [];
-  const count = entry.msgstrPlural.length > 0 ? entry.msgstrPlural.length : pluralSlotCount(metadata.pluralForms);
+  const count =
+    entry.msgstrPlural.length > 0
+      ? entry.msgstrPlural.length
+      : pluralSlotCount(metadata.pluralForms);
   return Array.from({ length: count }, () => '');
 }
 
@@ -167,7 +174,8 @@ function withDocument(
 function mergeTemplateEntry(existing: PoEntry, incoming: PoEntry, metadata: PoMetadata): PoEntry {
   const compatiblePluralShape =
     existing.msgidPlural === incoming.msgidPlural &&
-    (incoming.msgidPlural === null || existing.msgstrPlural.length === emptyPluralTranslations(incoming, metadata).length);
+    (incoming.msgidPlural === null ||
+      existing.msgstrPlural.length === emptyPluralTranslations(incoming, metadata).length);
 
   if (!compatiblePluralShape) {
     return {
@@ -359,6 +367,24 @@ export function createPoStore() {
                 msgstrPlural: nextPlural,
                 isTranslated: nextPlural.some((value) => value.length > 0),
               },
+            },
+          };
+        });
+
+        return nextState;
+      });
+    },
+
+    setLanguage: (language) => {
+      set((state) => {
+        const nextState = withDocument(state, (document) => {
+          if (document.metadata.language === language) return document;
+
+          return {
+            ...document,
+            metadata: {
+              ...document.metadata,
+              language,
             },
           };
         });

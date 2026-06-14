@@ -3,6 +3,8 @@ import {
   getSelectedVisibleEntries,
   selectApplySuggestions,
   selectHasFile,
+  selectLanguage,
+  selectSetLanguage,
   selectVisibleSelectedCount,
   usePoStore,
   usePoStoreApi,
@@ -38,6 +40,8 @@ interface TranslatePanelProps {
 
 export function TranslatePanel({ glossary }: TranslatePanelProps) {
   const hasFile = usePoStore(selectHasFile);
+  const targetLanguage = usePoStore(selectLanguage);
+  const setLanguage = usePoStore(selectSetLanguage);
   const selectedVisibleCount = usePoStore(selectVisibleSelectedCount);
   const applySuggestions = usePoStore(selectApplySuggestions);
   const store = usePoStoreApi();
@@ -52,11 +56,14 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
   const [currentBatch, setCurrentBatch] = useState(0);
   const [totalBatches, setTotalBatches] = useState(0);
   const [failedBatches, setFailedBatches] = useState(0);
+  const trimmedTargetLanguage = targetLanguage.trim();
+  const canTranslate = trimmedTargetLanguage.length > 0;
 
   const handleTranslate = useCallback(async () => {
     const snapshot = store.getState();
     const file = toPoFile(snapshot);
     const entries = getSelectedVisibleEntries(snapshot);
+    const nextTargetLanguage = snapshot.document?.metadata.language.trim() ?? '';
 
     if (entries.length === 0) {
       toast.error('No entries selected');
@@ -64,6 +71,10 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
     }
     if (!file) {
       toast.error('No file loaded');
+      return;
+    }
+    if (!nextTargetLanguage) {
+      toast.error('Set a target language before translating');
       return;
     }
 
@@ -91,8 +102,8 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
       try {
         const response = await translate({
           model,
-          sourceLanguage: file.metadata.language || 'English',
-          targetLanguage: 'German',
+          sourceLanguage: 'English',
+          targetLanguage: nextTargetLanguage,
           style: { formality, tone },
           customInstructions,
           glossary,
@@ -150,7 +161,14 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
         {/* Target language */}
         <div>
           <Label className="text-[11px]">Target Language</Label>
-          <Input value="German" disabled className="mt-1 h-8 text-xs bg-muted" />
+          <Input
+            value={targetLanguage}
+            onChange={(event) => {
+              setLanguage(event.target.value);
+            }}
+            placeholder="e.g., de_DE, fr, Spanish"
+            className="mt-1 h-8 text-xs"
+          />
         </div>
 
         {/* Model */}
@@ -197,7 +215,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
         <div className="flex gap-2">
           <Button
             onClick={() => void handleTranslate()}
-            disabled={isTranslating || selectedVisibleCount === 0}
+            disabled={isTranslating || selectedVisibleCount === 0 || !canTranslate}
             className="flex-1 h-8 text-xs"
             size="sm"
           >
@@ -206,7 +224,7 @@ export function TranslatePanel({ glossary }: TranslatePanelProps) {
           </Button>
           <Button
             onClick={() => void handleTranslate()}
-            disabled={isTranslating || !hasFile}
+            disabled={isTranslating || !hasFile || !canTranslate}
             variant="outline"
             size="sm"
             className="h-8 text-xs"
